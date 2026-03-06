@@ -3,9 +3,9 @@ import Navbar from './Navbar';
 
 function Layout() {
   return (
-    <div className="app-layout">
+    <div className="min-h-screen bg-background-dark">
       <Navbar />
-      <main className="main-content">
+      <main>
         <Outlet />
       </main>
     </div>
