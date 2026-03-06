@@ -1,6 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #f20db9;
+  --color-background-light: #f8f5f8;
+  --color-background-dark: #22101e;
+  --color-surface-light: #ffffff;
+  --color-surface-dark: #361a30;
+  --color-border-light: #e8d5e5;
+  --color-border-dark: #4a2342;
+  --font-display: "Space Grotesk", sans-serif;
+}
+
 /* Global Styles */
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: "Space Grotesk", system-ui, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color: #213547;
@@ -77,8 +90,11 @@
   width: 100%;
 }
 
-/* Pages */
-h1 {
-  margin-bottom: 1rem;
-  color: #1a1a2e;
+/* No scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
