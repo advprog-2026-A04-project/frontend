@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { inventoryApi } from '../../api/axiosInstance';
 
 const formatRupiah = (num) => {
@@ -12,6 +13,7 @@ const getStockBadgeStyle = (stock) => {
 };
 
 function InventoryPage() {
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchTab, setSearchTab] = useState('product'); // 'product' | 'jastiper'
@@ -218,7 +220,7 @@ function InventoryPage() {
                       <span className="material-symbols-outlined text-[14px]">location_on</span>
                       {product.originLocation}
                     </div>
-                    <button className="w-full mt-2 bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+                    <button onClick={() => navigate(`/products/${product.id}`)} className="w-full mt-2 bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
                       <span className="material-symbols-outlined text-sm">visibility</span>
                       Lihat Detail
                     </button>

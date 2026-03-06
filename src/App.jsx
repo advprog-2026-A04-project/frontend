@@ -1,12 +1,6 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
-import HomePage from './pages/HomePage';
 import NotFoundPage from './pages/NotFoundPage';
-
-// Auth-Profile feature
-import LoginPage from './features/auth-profile/LoginPage';
-import RegisterPage from './features/auth-profile/RegisterPage';
-import ProfilePage from './features/auth-profile/ProfilePage';
 
 // Order feature
 import OrderListPage from './features/order/OrderListPage';
@@ -15,24 +9,17 @@ import OrderDetailPage from './features/order/OrderDetailPage';
 // Voucher-Promo feature
 import VoucherListPage from './features/voucher-promo/VoucherListPage';
 
-// Wallet feature
-import WalletPage from './features/wallet/WalletPage';
-
 // Inventory feature
 import InventoryPage from './features/inventory/InventoryPage';
+import ProductDetailPage from './features/inventory/ProductDetailPage';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
-          {/* Home */}
-          <Route index element={<HomePage />} />
-
-          {/* Auth-Profile routes */}
-          <Route path="login" element={<LoginPage />} />
-          <Route path="register" element={<RegisterPage />} />
-          <Route path="profile" element={<ProfilePage />} />
+          {/* Home redirects to inventory/katalog */}
+          <Route index element={<Navigate to="/inventory" replace />} />
 
           {/* Order routes */}
           <Route path="orders" element={<OrderListPage />} />
@@ -41,11 +28,9 @@ function App() {
           {/* Voucher-Promo routes */}
           <Route path="vouchers" element={<VoucherListPage />} />
 
-          {/* Wallet routes */}
-          <Route path="wallet" element={<WalletPage />} />
-
           {/* Inventory routes */}
           <Route path="inventory" element={<InventoryPage />} />
+          <Route path="products/:id" element={<ProductDetailPage />} />
 
           {/* 404 */}
           <Route path="*" element={<NotFoundPage />} />
