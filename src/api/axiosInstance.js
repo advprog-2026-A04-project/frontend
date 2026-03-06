@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-// Base URLs for each microservice - update these with actual deployed URLs
+// Base URLs for each microservice
+// In production (Docker/nginx), use '' for services proxied via nginx
+// In development, use localhost with specific ports
 const SERVICES = {
   AUTH_PROFILE: import.meta.env.VITE_AUTH_PROFILE_URL || 'http://localhost:8081',
   ORDER: import.meta.env.VITE_ORDER_URL || 'http://localhost:8082',
