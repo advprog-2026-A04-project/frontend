@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 const API = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const VOUCHER_API =
+    import.meta.env.VITE_VOUCHER_BASE_URL || "http://18.232.174.224";
 
 function cx(...classes) {
     return classes.filter(Boolean).join(" ");
@@ -20,6 +22,10 @@ function formatDate(value) {
     } catch {
         return "-";
     }
+}
+
+function normalizeVoucherCode(code) {
+    return String(code || "").trim().toUpperCase();
 }
 
 async function fetchHealthData() {
@@ -70,6 +76,84 @@ async function fetchOrdersData(userId, role) {
     }
 }
 
+async function fetchVoucherHealth() {
+    try {
+        const response = await fetch(`${VOUCHER_API}/health`);
+        const data = await response.json();
+
+        return {
+            ok: response.ok,
+            status: data?.status || "UNKNOWN",
+            db: data?.db || "UNKNOWN",
+        };
+    } catch {
+        return {
+            ok: false,
+            status: "DOWN",
+            db: "DOWN",
+        };
+    }
+}
+
+async function claimVoucher({ code, orderId, orderAmount }) {
+    const normalizedCode = normalizeVoucherCode(code);
+
+    if (!normalizedCode) {
+        return {
+            success: false,
+            message: "Voucher code kosong.",
+        };
+    }
+
+    try {
+        const response = await fetch(`${VOUCHER_API}/vouchers/claim`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                code: normalizedCode,
+                orderId: String(orderId),
+                orderAmount: Number(orderAmount || 0),
+            }),
+        });
+
+        const data = await response.json().catch(() => null);
+
+        if (!response.ok) {
+            return {
+                success: false,
+                message:
+                    data?.message ||
+                    data?.error ||
+                    `Voucher claim failed (${response.status})`,
+                raw: data,
+            };
+        }
+
+        return {
+            success: !!data?.success,
+            idempotent: !!data?.idempotent,
+            code: data?.code || normalizedCode,
+            orderId: data?.orderId || String(orderId),
+            orderAmount: Number(data?.orderAmount ?? orderAmount ?? 0),
+            discountAmount: Number(data?.discountAmount ?? 0),
+            discountType: data?.discountType || null,
+            message: data?.success
+                ? data?.idempotent
+                    ? "Voucher sudah pernah di-claim untuk order ini (idempotent)."
+                    : "Voucher berhasil di-claim."
+                : data?.message || "Voucher claim gagal.",
+            raw: data,
+        };
+    } catch {
+        return {
+            success: false,
+            message: "Voucher claim failed (network/CORS).",
+        };
+    }
+}
+
 function Field({ label, children }) {
     return (
         <label className="flex flex-col w-full">
@@ -88,6 +172,9 @@ export default function OrderPage() {
     const [health, setHealth] = useState("loading...");
     const [lastChecked, setLastChecked] = useState(null);
 
+    const [voucherServiceHealth, setVoucherServiceHealth] = useState("loading...");
+    const [voucherDbHealth, setVoucherDbHealth] = useState("loading...");
+
     const [orders, setOrders] = useState([]);
     const [ordersMsg, setOrdersMsg] = useState("");
 
@@ -95,8 +182,11 @@ export default function OrderPage() {
         productId: "2",
         qty: 1,
         address: "Jl. Mawar No. 1",
-        voucherCode: "PROMO10",
+        voucherCode: "SPRING10",
     });
+
+    const [voucherMsg, setVoucherMsg] = useState("");
+    const [voucherClaimResult, setVoucherClaimResult] = useState(null);
 
     const [checkoutMsg, setCheckoutMsg] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -111,10 +201,24 @@ export default function OrderPage() {
         return "border-red-400/20 bg-red-400/10 text-red-200";
     }, [health]);
 
+    const voucherHealthTone = useMemo(() => {
+        if (voucherServiceHealth === "UP") {
+            return "border-cyan-400/20 bg-cyan-400/10 text-cyan-200";
+        }
+        if (voucherServiceHealth === "loading...") {
+            return "border-white/10 bg-white/5 text-white/70";
+        }
+        return "border-red-400/20 bg-red-400/10 text-red-200";
+    }, [voucherServiceHealth]);
+
     async function refreshHealth() {
         const result = await fetchHealthData();
         setHealth(result.health);
         setLastChecked(result.checkedAt);
+
+        const voucherHealth = await fetchVoucherHealth();
+        setVoucherServiceHealth(voucherHealth.status);
+        setVoucherDbHealth(voucherHealth.db);
     }
 
     async function refreshOrders() {
@@ -133,10 +237,26 @@ export default function OrderPage() {
         event.preventDefault();
         setIsSubmitting(true);
         setCheckoutMsg("Submitting...");
+        setVoucherMsg("");
+        setVoucherClaimResult(null);
+
+        if (!checkout.address.trim()) {
+            setCheckoutMsg("Alamat tidak boleh kosong.");
+            setIsSubmitting(false);
+            return;
+        }
+
+        if (!checkout.productId || Number(checkout.qty) <= 0) {
+            setCheckoutMsg("Product ID dan quantity harus valid.");
+            setIsSubmitting(false);
+            return;
+        }
+
+        const normalizedVoucherCode = normalizeVoucherCode(checkout.voucherCode);
 
         const body = {
             address: checkout.address,
-            voucherCode: checkout.voucherCode || null,
+            voucherCode: normalizedVoucherCode || null,
             items: [
                 {
                     productId: Number(checkout.productId),
@@ -166,9 +286,39 @@ export default function OrderPage() {
             }
 
             const created = data.data;
-            setCheckoutMsg(
-                `✅ Order berhasil dibuat. ID: ${created?.id ?? "-"} | Status: ${created?.status ?? "PENDING"}`
-            );
+            const createdOrderId = created?.id ?? "-";
+            const createdOrderStatus = created?.status ?? "PENDING";
+            const createdOrderAmount =
+                Number(created?.totalPaid ?? created?.totalAmount ?? 0) || 0;
+
+            let finalMessage = `✅ Order berhasil dibuat. ID: ${createdOrderId} | Status: ${createdOrderStatus}`;
+
+            if (normalizedVoucherCode) {
+                const voucherResult = await claimVoucher({
+                    code: normalizedVoucherCode,
+                    orderId: createdOrderId,
+                    orderAmount: createdOrderAmount,
+                });
+
+                setVoucherClaimResult(voucherResult);
+
+                if (voucherResult.success) {
+                    setVoucherMsg(
+                        voucherResult.idempotent
+                            ? `ℹ️ Voucher ${voucherResult.code} sudah pernah dipakai untuk order ${voucherResult.orderId}.`
+                            : `✅ Voucher ${voucherResult.code} berhasil di-claim untuk order ${voucherResult.orderId}.`
+                    );
+
+                    finalMessage += voucherResult.idempotent
+                        ? " | Voucher: already claimed (idempotent)"
+                        : " | Voucher: claimed";
+                } else {
+                    setVoucherMsg(`❌ ${voucherResult.message}`);
+                    finalMessage += " | Voucher: claim failed";
+                }
+            }
+
+            setCheckoutMsg(finalMessage);
 
             await refreshOrders();
             await refreshHealth();
@@ -183,17 +333,22 @@ export default function OrderPage() {
         let ignore = false;
 
         async function loadInitialData() {
-            const [healthResult, ordersResult] = await Promise.all([
+            const [healthResult, ordersResult, voucherHealth] = await Promise.all([
                 fetchHealthData(),
                 fetchOrdersData(demoUserId, demoRole),
+                fetchVoucherHealth(),
             ]);
 
             if (ignore) return;
 
             setHealth(healthResult.health);
             setLastChecked(healthResult.checkedAt);
+
             setOrders(ordersResult.orders);
             setOrdersMsg(ordersResult.error);
+
+            setVoucherServiceHealth(voucherHealth.status);
+            setVoucherDbHealth(voucherHealth.db);
         }
 
         loadInitialData();
@@ -201,7 +356,7 @@ export default function OrderPage() {
         return () => {
             ignore = true;
         };
-    }, [demoUserId, demoRole]);
+    }, []);
 
     return (
         <div className="min-h-screen bg-background-light text-slate-900 dark:bg-background-dark dark:text-slate-100 font-display antialiased overflow-x-hidden">
@@ -220,18 +375,27 @@ export default function OrderPage() {
                   shopping_bag
                 </span>
                                 <h2 className="text-slate-900 dark:text-white text-xl font-bold tracking-tight">
-                                    JSON
+                                    ORDER
                                 </h2>
                             </div>
 
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 flex-wrap justify-end">
                 <span
                     className={cx(
                         "rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-wider",
                         healthTone
                     )}
                 >
-                  Health: {health}
+                  Order Health: {health}
+                </span>
+
+                                <span
+                                    className={cx(
+                                        "rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-wider",
+                                        voucherHealthTone
+                                    )}
+                                >
+                  Voucher Health: {voucherServiceHealth}
                 </span>
 
                                 <button
@@ -247,16 +411,16 @@ export default function OrderPage() {
                             <div className="flex flex-wrap justify-between gap-3 items-end">
                                 <div>
                                     <h1 className="text-slate-900 dark:text-white tracking-tight text-3xl md:text-4xl font-bold leading-tight">
-                                        Checkout
+                                        Checkout + Voucher Claim
                                     </h1>
                                     <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                                        Milestone 25%: create order sederhana, simpan ke database,
-                                        lalu tampilkan di tabel order.
+                                        Order dibuat dulu, lalu voucher di-claim ke service voucher
+                                        menggunakan orderId dan orderAmount.
                                     </p>
                                 </div>
 
                                 <div className="rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-xs font-bold uppercase tracking-wider text-amber-500">
-                                    Status awal order: pending
+                                    Voucher API: {VOUCHER_API}
                                 </div>
                             </div>
 
@@ -340,26 +504,30 @@ export default function OrderPage() {
                                         <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-3 uppercase tracking-wider">
                                             Voucher Code
                                         </h3>
-                                        <div className="flex gap-2">
-                                            <input
-                                                className="form-input flex-1 rounded-xl text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary border border-slate-300 dark:border-primary/30 bg-transparent px-4 py-3 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all"
-                                                placeholder="PROMO10"
-                                                type="text"
-                                                value={checkout.voucherCode}
-                                                onChange={(e) =>
-                                                    setCheckout((prev) => ({
-                                                        ...prev,
-                                                        voucherCode: e.target.value,
-                                                    }))
-                                                }
-                                            />
-                                            <button
-                                                type="button"
-                                                className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-bold text-sm transition-colors whitespace-nowrap"
-                                            >
-                                                Apply
-                                            </button>
-                                        </div>
+
+                                        <input
+                                            className="form-input w-full rounded-xl text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary border border-slate-300 dark:border-primary/30 bg-transparent px-4 py-3 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all"
+                                            placeholder="SPRING10"
+                                            type="text"
+                                            value={checkout.voucherCode}
+                                            onChange={(e) =>
+                                                setCheckout((prev) => ({
+                                                    ...prev,
+                                                    voucherCode: e.target.value.toUpperCase(),
+                                                }))
+                                            }
+                                        />
+
+                                        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                                            Voucher akan di-claim otomatis setelah order berhasil dibuat.
+                                            Server voucher akan normalisasi code dengan trim + uppercase.
+                                        </p>
+
+                                        {voucherMsg && (
+                                            <div className="mt-4 rounded-xl border border-slate-200 dark:border-primary/20 bg-slate-50 dark:bg-primary/10 p-4 text-sm text-slate-700 dark:text-slate-200">
+                                                {voucherMsg}
+                                            </div>
+                                        )}
                                     </section>
 
                                     <section className="bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/20 rounded-2xl p-6 flex flex-col gap-6">
@@ -388,9 +556,20 @@ export default function OrderPage() {
 
                                             <div className="flex justify-between items-center">
                         <span className="text-slate-600 dark:text-slate-400 text-sm">
-                          Discount
+                          Voucher
                         </span>
-                                                <span className="font-medium text-primary">Rp 0</span>
+                                                <span className="font-medium text-primary">
+                          {normalizeVoucherCode(checkout.voucherCode) || "-"}
+                        </span>
+                                            </div>
+
+                                            <div className="flex justify-between items-center">
+                        <span className="text-slate-600 dark:text-slate-400 text-sm">
+                          Voucher Service DB
+                        </span>
+                                                <span className="font-medium text-slate-900 dark:text-white">
+                          {voucherDbHealth}
+                        </span>
                                             </div>
 
                                             <div className="h-px w-full bg-slate-200 dark:bg-primary/20 my-2" />
@@ -400,7 +579,7 @@ export default function OrderPage() {
                           Total
                         </span>
                                                 <span className="font-bold text-primary text-xl">
-                          Rp 0
+                          Dihitung backend
                         </span>
                                             </div>
                                         </div>
@@ -419,7 +598,9 @@ export default function OrderPage() {
                         <span className="material-symbols-outlined text-lg leading-none">
                           shopping_cart_checkout
                         </span>
-                                                <span>{isSubmitting ? "Submitting..." : "Create Order"}</span>
+                                                <span>
+                          {isSubmitting ? "Submitting..." : "Create Order + Claim Voucher"}
+                        </span>
                                             </button>
                                         </form>
 
@@ -431,6 +612,58 @@ export default function OrderPage() {
                                     </section>
                                 </div>
                             </div>
+
+                            {voucherClaimResult && (
+                                <section className="bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/20 rounded-2xl p-6">
+                                    <h2 className="text-slate-900 dark:text-white text-xl font-bold tracking-tight">
+                                        Voucher Claim Result
+                                    </h2>
+
+                                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                        <div className="rounded-xl border border-slate-200 dark:border-primary/20 p-4">
+                                            <div className="text-slate-500 dark:text-slate-400">Success</div>
+                                            <div className="mt-1 font-bold text-slate-900 dark:text-white">
+                                                {String(voucherClaimResult.success)}
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-xl border border-slate-200 dark:border-primary/20 p-4">
+                                            <div className="text-slate-500 dark:text-slate-400">Idempotent</div>
+                                            <div className="mt-1 font-bold text-slate-900 dark:text-white">
+                                                {String(voucherClaimResult.idempotent ?? false)}
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-xl border border-slate-200 dark:border-primary/20 p-4">
+                                            <div className="text-slate-500 dark:text-slate-400">Code</div>
+                                            <div className="mt-1 font-bold text-slate-900 dark:text-white">
+                                                {voucherClaimResult.code || "-"}
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-xl border border-slate-200 dark:border-primary/20 p-4">
+                                            <div className="text-slate-500 dark:text-slate-400">Order ID</div>
+                                            <div className="mt-1 font-bold text-slate-900 dark:text-white">
+                                                {voucherClaimResult.orderId || "-"}
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-xl border border-slate-200 dark:border-primary/20 p-4">
+                                            <div className="text-slate-500 dark:text-slate-400">Order Amount</div>
+                                            <div className="mt-1 font-bold text-slate-900 dark:text-white">
+                                                {formatRp(voucherClaimResult.orderAmount || 0)}
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-xl border border-slate-200 dark:border-primary/20 p-4">
+                                            <div className="text-slate-500 dark:text-slate-400">Discount Amount</div>
+                                            <div className="mt-1 font-bold text-slate-900 dark:text-white">
+                                                {formatRp(voucherClaimResult.discountAmount || 0)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+                            )}
 
                             <section className="bg-white dark:bg-primary/5 border border-slate-200 dark:border-primary/20 rounded-2xl overflow-hidden">
                                 <div className="px-6 py-5 border-b border-slate-200 dark:border-primary/20">
