@@ -13,7 +13,7 @@ const port = Number(process.env.PORT || 3001);
 
 app.use(express.static(distDirectory));
 
-app.get('*', (request, response, next) => {
+app.use((request, response, next) => {
   if (request.path.startsWith('/api/')) {
     next();
     return;
