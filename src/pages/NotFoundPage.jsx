@@ -1,19 +1,15 @@
 import { Link } from 'react-router-dom';
 
-function NotFoundPage() {
+export default function NotFoundPage() {
   return (
-    <div className="flex flex-col items-center justify-center py-32 text-center">
-      <span className="material-symbols-rounded text-7xl text-primary mb-4">search_off</span>
-      <h1 className="text-4xl font-bold text-white mb-2">404</h1>
-      <p className="text-gray-400 mb-6">Halaman yang kamu cari tidak ditemukan.</p>
-      <Link
-        to="/inventory"
-        className="px-6 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary/80 transition"
-      >
-        Kembali ke Katalog
-      </Link>
-    </div>
+    <section className="page">
+      <div className="empty-state">
+        <h1>That page does not exist.</h1>
+        <p>Stay inside the milestone demo flow and return to the home page.</p>
+        <Link className="button" to="/">
+          Back home
+        </Link>
+      </div>
+    </section>
   );
 }
-
-export default NotFoundPage;

@@ -1,106 +1,147 @@
-# AdvProg 2026 A04 - Frontend
+# Frontend Milestone 25% and 50% Demo
 
-Shared frontend application for our microservice-based project, built with **React + Vite**.
+This frontend is scoped only to Milestone `25%` and `50%`.
 
-## Tech Stack
+It demonstrates:
 
-- **React 19** - UI library
-- **Vite 7** - Build tool & dev server
-- **React Router 7** - Client-side routing
-- **Axios** - HTTP client for backend API calls
+- register
+- login
+- authenticated user state
+- browse products
+- product detail
+- wallet balance and top-up
+- checkout with `voucherCode`
+- inventory validation
+- voucher validation
+- wallet validation
+- order success and failure outcomes
+- my orders view
 
-## Getting Started
+It does not implement Milestone `75%` or `100%` features such as refund flows, ratings, or a full admin workflow.
+
+## Architecture
+
+- React + Vite frontend
+- Express BFF for frontend-safe API aggregation
+- Live voucher integration against the deployed Voucher service
+- Local in-memory adapters for Auth/Profile, Inventory, Wallet, and Order because their deployed environments were unavailable or did not match the documented runtime contract during verification
+
+The app is intentionally simple and demo-ready rather than production-complete.
+
+## Service Integration Mode
+
+- `Voucher`: live integration via `VOUCHER_BASE_URL`
+- `Auth/Profile`: local adapter
+- `Inventory`: local seeded catalog and stock adapter
+- `Wallet`: local wallet adapter
+- `Order`: local order adapter
+
+Current demo data is kept in memory, so it resets when the server restarts or a new instance is created.
+
+## Demo Credentials
+
+- Email: `demo@json.app`
+- Password: `Demo123!`
+- Demo voucher: `MILESTONE10`
+
+## Local Setup
+
+Recommended runtime: Node `20.19+`
+
+1. Install dependencies:
 
 ```bash
-# 1. Clone the repo
-git clone https://github.com/advprog-2026-A04-project/frontend.git
-cd frontend
-
-# 2. Install dependencies
 npm install
+```
 
-# 3. Copy environment file and update URLs
+2. Copy env values:
+
+```bash
 cp .env.example .env
+```
 
-# 4. Start development server
+PowerShell alternative:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+3. Start the app:
+
+```bash
 npm run dev
 ```
 
-The app will be available at `http://localhost:5173`.
+Development URLs:
 
-## Project Structure
-
-```
-src/
-├── api/                    # Axios instances per microservice
-│   └── axiosInstance.js    # Pre-configured axios with JWT interceptors
-├── components/             # Shared/reusable components
-│   ├── Layout.jsx          # Main layout with Navbar + Outlet
-│   └── Navbar.jsx          # Navigation bar
-├── features/               # Feature modules (one per microservice)
-│   ├── auth-profile/       # Login, Register, Profile pages
-│   ├── order/              # Order list, Order detail pages
-│   ├── voucher-promo/      # Voucher & promo pages
-│   ├── wallet/             # Wallet pages
-│   └── inventory/          # Inventory/product pages
-├── pages/                  # Top-level pages (Home, 404)
-├── App.jsx                 # Root component with routing
-├── main.jsx                # Entry point
-└── index.css               # Global styles
-```
-
-## Team Workflow
-
-Each team member works primarily in their own feature folder under `src/features/`:
-
-| Member | Feature Folder | Backend Repo |
-|--------|---------------|--------------|
-| Member 1 | `src/features/auth-profile/` | Auth-Profile |
-| Member 2 | `src/features/order/` | Order |
-| Member 3 | `src/features/voucher-promo/` | Voucher-Promo |
-| Member 4 | `src/features/wallet/` | Wallet |
-| Member 5 | `src/features/inventory/` | Inventory |
-
-### Git Branching Strategy
-
-1. **Always create a feature branch** from `main`:
-   ```bash
-   git checkout main
-   git pull origin main
-   git checkout -b feature/order-list
-   ```
-2. **Push your branch** and create a **Pull Request** to `main`
-3. **Get at least 1 review** before merging
-4. **Never push directly to `main`**
-
-### Adding API Calls
-
-Import the pre-configured axios instance for your microservice:
-
-```jsx
-import { orderApi } from '../../api/axiosInstance';
-
-// Example: fetch orders
-const response = await orderApi.get('/api/orders');
-```
+- Frontend: `http://localhost:5173`
+- BFF: `http://localhost:3001`
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` and update the URLs to match your local backend ports:
+- `PORT`: Express server port. Default: `3001`
+- `VOUCHER_BASE_URL`: Voucher service base URL
+- `VOUCHER_ADMIN_TOKEN`: admin token used to ensure the demo voucher exists
+- `DEMO_VOUCHER_CODE`: seeded voucher code shown in the UI
 
+See [.env.example](./.env.example).
+
+## Available Commands
+
+```bash
+npm run dev
+npm run lint
+npm run test
+npm run build
+npm start
 ```
-VITE_AUTH_PROFILE_URL=http://localhost:8081
-VITE_ORDER_URL=http://localhost:8082
-VITE_VOUCHER_PROMO_URL=http://localhost:8083
-VITE_WALLET_URL=http://localhost:8084
-VITE_INVENTORY_URL=http://localhost:8085
+
+## Testing
+
+Automated coverage includes:
+
+- register page flow
+- login and authenticated session flow
+- product browsing
+- product detail to checkout flow
+- voucher input and validation flow
+- successful checkout result flow
+
+Run tests with:
+
+```bash
+npm run test
 ```
 
-## Available Scripts
+## Manual QA Checklist
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start dev server |
-| `npm run build` | Build for production |
-| `npm run preview` | Preview production build |
-| `npm run lint` | Run ESLint |
+- Register a new user from `/register`
+- Log in from `/login`
+- Browse products from `/catalog`
+- Open a product detail page
+- Open `/wallet` and confirm the balance is shown
+- Trigger a top-up and confirm the balance changes
+- Start checkout and verify the `voucherCode` field exists
+- Enter `MILESTONE10`, validate it, and confirm a discount is shown
+- Complete a successful checkout and confirm the order result page shows `PAID` / `SUCCESS`
+- Open `/orders` and confirm the created order is listed
+- Trigger a failure path by using a quantity above stock or a cart total above wallet balance and confirm the result page shows a clear failure reason
+
+## Deployment
+
+This project is containerized with the included [Dockerfile](./Dockerfile) and can be deployed directly to Google Cloud Run.
+
+Basic deploy flow:
+
+```bash
+gcloud run deploy <service-name> --source . --region us-central1 --allow-unauthenticated
+```
+
+Deployed frontend URL: `TBD`
+
+## Risks and Limitations
+
+- Voucher is the only live microservice integration in the current demo.
+- Auth/Profile, Inventory, Wallet, and Order are adapter-backed because the available deployments were not reliable enough for a stable milestone demo.
+- All adapter data is in memory and is not persistent across restarts.
+- The app is deliberately limited to Milestone `25%` and `50%`.

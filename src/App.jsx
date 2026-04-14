@@ -1,42 +1,42 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Layout from './components/Layout';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import AppShell from './components/AppShell';
+import ProtectedRoute from './components/ProtectedRoute';
+import { SessionProvider } from './context/SessionContext';
+import CatalogPage from './pages/CatalogPage';
+import CheckoutPage from './pages/CheckoutPage';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
-
-// Order feature
-import OrderListPage from './features/order/OrderListPage';
-import OrderDetailPage from './features/order/OrderDetailPage';
-
-// Voucher-Promo feature
-import VoucherListPage from './features/voucher-promo/VoucherListPage';
-
-// Inventory feature
-import InventoryPage from './features/inventory/InventoryPage';
-import ProductDetailPage from './features/inventory/ProductDetailPage';
+import OrderResultPage from './pages/OrderResultPage';
+import OrdersPage from './pages/OrdersPage';
+import ProductDetailPage from './pages/ProductDetailPage';
+import RegisterPage from './pages/RegisterPage';
+import WalletPage from './pages/WalletPage';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          {/* Home redirects to inventory/katalog */}
-          <Route index element={<Navigate to="/inventory" replace />} />
+    <SessionProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<AppShell />} path="/">
+            <Route element={<HomePage />} index />
+            <Route element={<RegisterPage />} path="register" />
+            <Route element={<LoginPage />} path="login" />
 
-          {/* Order routes */}
-          <Route path="orders" element={<OrderListPage />} />
-          <Route path="orders/:id" element={<OrderDetailPage />} />
+            <Route element={<ProtectedRoute />}>
+              <Route element={<CatalogPage />} path="products" />
+              <Route element={<ProductDetailPage />} path="products/:productId" />
+              <Route element={<CheckoutPage />} path="checkout" />
+              <Route element={<WalletPage />} path="wallet" />
+              <Route element={<OrdersPage />} path="orders" />
+              <Route element={<OrderResultPage />} path="orders/:orderId" />
+            </Route>
 
-          {/* Voucher-Promo routes */}
-          <Route path="vouchers" element={<VoucherListPage />} />
-
-          {/* Inventory routes */}
-          <Route path="inventory" element={<InventoryPage />} />
-          <Route path="products/:id" element={<ProductDetailPage />} />
-
-          {/* 404 */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+            <Route element={<NotFoundPage />} path="*" />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </SessionProvider>
   );
 }
 
