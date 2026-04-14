@@ -137,7 +137,7 @@ Basic deploy flow:
 gcloud run deploy <service-name> --source . --region us-central1 --allow-unauthenticated
 ```
 
-Deployed frontend URL: `TBD`
+Deployed frontend URL: `https://advprog-frontend-m25-m50-383620816191.us-central1.run.app`
 
 ## Risks and Limitations
 
