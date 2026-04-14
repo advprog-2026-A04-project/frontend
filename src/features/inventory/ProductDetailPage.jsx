@@ -79,8 +79,9 @@ function ProductDetailPage() {
     setOrderSuccess(null);
     try {
       // 1. Reserve stock in inventory
-      await inventoryApi.post(`/api/products/${id}/reserve`, null, {
-        params: { quantity },
+      await inventoryApi.post(`/api/products/${id}/reserve`, {
+        productId: id,
+        quantity: quantity
       });
 
       // 2. Create order

@@ -5,7 +5,7 @@ const SERVICES = {
   ORDER: import.meta.env.VITE_ORDER_URL || 'https://order-n7mf.onrender.com',
   VOUCHER_PROMO: import.meta.env.VITE_VOUCHER_PROMO_URL || 'http://18.232.174.224',
   WALLET: import.meta.env.VITE_WALLET_URL || 'http://localhost:8084',
-  INVENTORY: import.meta.env.VITE_INVENTORY_URL || 'http://localhost:8085',
+  INVENTORY: import.meta.env.VITE_INVENTORY_URL || 'https://ytterbic-lorain-fakhrihusainiromza-3264dcf6.koyeb.app',
 };
 
 function createApiInstance(baseURL) {
