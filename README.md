@@ -123,6 +123,8 @@ python scripts/run_concurrency.py
 
 The verifier writes screenshots, raw API evidence, and run summaries under `verification-artifacts/`.
 
+A curated committed evidence snapshot from a live deployed run is available under [verification/selenium-verifier/evidence/live-20260415](./verification/selenium-verifier/evidence/live-20260415).
+
 ## Cloud Run Deploy
 
 ```bash
