@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import LoadingState from '../components/LoadingState';
+import ProductImage from '../components/ProductImage';
 import { api } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/format';
 
@@ -54,7 +55,7 @@ export default function ProductDetailPage() {
     <section className="page">
       <article className="detail-layout">
         <div className="detail-media">
-          <img src={product.imageUrl} alt={product.name} />
+          <ProductImage product={product} />
         </div>
 
         <div className="detail-copy">
