@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import asdict
 from datetime import datetime, timedelta
 from decimal import Decimal
+from secrets import token_hex
 from typing import Any
 
 from .models import CheckoutState, ProductInfo, TestUser, VoucherInfo
@@ -15,9 +16,11 @@ class SetupHelper:
         self.services = services
 
     def new_user(self, prefix: str) -> TestUser:
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        email = f"{prefix}-{timestamp}@json.app"
-        return TestUser(email=email, username=f"{prefix}{timestamp}", password="Audit123!")
+        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
+        suffix = token_hex(3)
+        username = f"{prefix}{timestamp}{suffix}"
+        email = f"{prefix}-{timestamp}-{suffix}@json.app"
+        return TestUser(email=email, username=username, password="Audit123!")
 
     def register_user_api(self, user: TestUser, evidence=None, evidence_name: str | None = None) -> TestUser:
         response = self.services.auth.register(
