@@ -68,6 +68,61 @@ The automated frontend suite covers:
 - checkout with voucher input
 - successful order result flow
 
+## Product Images
+
+Inventory does not currently expose product image URLs. The frontend therefore renders:
+- real remote images when a valid `imageUrl` exists
+- generated fallback artwork when `imageUrl` is missing or fails to load
+
+This prevents broken image icons in the catalog and product detail pages while still using the real Inventory payload.
+
+## Selenium Demo Script
+
+For a slow, visible walkthrough of the live deployed app:
+
+```bash
+python -m pip install --user -r requirements-selenium.txt
+python scripts/selenium_demo_flow.py --slow-seconds 6 --result-extra-seconds 10
+```
+
+The script opens a real browser and walks through:
+- register
+- login
+- browse products
+- wallet top-up
+- checkout with `MILESTONE10`
+- order result
+- optional insufficient-balance failure flow
+
+Useful flags:
+- `--browser edge`
+- `--browser chrome`
+- `--no-show-failure-flow`
+- `--no-hold-open`
+
+## Standalone Verifier
+
+A stricter evidence-producing verifier lives in [verification/selenium-verifier](./verification/selenium-verifier).
+
+It uses:
+- Selenium for the real frontend flow
+- direct API assertions for before/after state
+- a separate concurrency runner for Inventory, Wallet, and Voucher
+
+Quick start:
+
+```bash
+cd verification/selenium-verifier
+python -m venv .venv
+.venv\Scripts\activate
+python -m pip install -r requirements.txt
+copy .env.example .env
+pytest tests/test_live_verification.py -m live -s --html=verification-artifacts\live-report.html --self-contained-html
+python scripts/run_concurrency.py
+```
+
+The verifier writes screenshots, raw API evidence, and run summaries under `verification-artifacts/`.
+
 ## Cloud Run Deploy
 
 ```bash

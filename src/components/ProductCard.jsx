@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
 import { formatCurrency } from '../lib/format';
+import ProductImage from './ProductImage';
 
 export default function ProductCard({ product }) {
   return (
     <article className="product-card">
       <div className="product-card__media">
-        <img src={product.imageUrl} alt={product.name} />
+        <ProductImage product={product} />
       </div>
       <div className="product-card__body">
         <div className="pill-row">
