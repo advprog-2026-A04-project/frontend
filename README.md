@@ -15,6 +15,8 @@ It does not include Milestone `75%` or `100%` features.
 
 - `https://advprog-frontend-m25-m50-383620816191.us-central1.run.app`
 
+Cloud Run also exposes the service at `https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app`. Backend CORS must allow both frontend origins.
+
 ## Required Environment Variables
 
 Development defaults live in [.env.example](./.env.example).
@@ -42,6 +44,15 @@ npm run dev
 Development URL:
 - `http://localhost:5173`
 
+Local service ports expected by the frontend defaults:
+- Auth/Profile: `http://localhost:8081`
+- Inventory: `http://localhost:8082`
+- Wallet: `http://localhost:8083`
+- Order: `http://localhost:8084`
+- Voucher/Promo: `http://localhost:8085`
+
+For a local demo stack, run Voucher/Promo with `SPRING_PROFILES_ACTIVE=cloudrun` so `MILESTONE10` is seeded automatically.
+
 ## Test and Build
 
 ```bash
@@ -63,9 +74,13 @@ The automated frontend suite covers:
 gcloud run deploy advprog-frontend-m25-m50 --source . --region us-central1 --allow-unauthenticated --max-instances=1
 ```
 
+Health check path:
+- `GET /status`
+
 ## Manual QA Checklist
 
 - Open `/` and confirm service health cards load.
+- Open `/status` and confirm the frontend returns `ok`.
 - Register a new buyer account.
 - Log in with the new account.
 - Open `/products` and browse the catalog.
