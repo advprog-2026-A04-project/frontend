@@ -1,0 +1,55 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://order-api-383620816191.us-central1.run.app/orders/2",
+    "headers": {
+      "Authorization": "<redacted>"
+    },
+    "params": null,
+    "json": null
+  },
+  "response": {
+    "status_code": 200,
+    "headers": {
+      "vary": "Origin, Access-Control-Request-Method, Access-Control-Request-Headers",
+      "x-content-type-options": "nosniff",
+      "x-xss-protection": "0",
+      "cache-control": "no-cache, no-store, max-age=0, must-revalidate",
+      "pragma": "no-cache",
+      "expires": "0",
+      "x-frame-options": "DENY",
+      "content-type": "application/json",
+      "date": "Wed, 15 Apr 2026 11:39:05 GMT",
+      "server": "Google Frontend",
+      "Alt-Svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+      "Transfer-Encoding": "chunked"
+    },
+    "payload": {
+      "success": true,
+      "data": {
+        "id": 2,
+        "buyerId": 37,
+        "jastiperId": 2001,
+        "status": "PAID",
+        "shippingAddress": "Jl. Mawar No. 1, Jakarta",
+        "subtotal": 3250000.0,
+        "discountTotal": 325000.0,
+        "totalPaid": 2925000.0,
+        "voucherCode": "AUDIT113847626455",
+        "failureReason": null,
+        "createdAt": "2026-04-15T11:39:03.088999Z",
+        "items": [
+          {
+            "productId": "22222222-2222-2222-2222-222222222222",
+            "productNameSnapshot": "Adidas Samba OG Wales Bonner",
+            "unitPriceSnapshot": 3250000.0,
+            "qty": 1,
+            "lineTotal": 3250000.0
+          }
+        ]
+      },
+      "error": null
+    },
+    "text": "{\"success\":true,\"data\":{\"id\":2,\"buyerId\":37,\"jastiperId\":2001,\"status\":\"PAID\",\"shippingAddress\":\"Jl. Mawar No. 1, Jakarta\",\"subtotal\":3250000.00,\"discountTotal\":325000.00,\"totalPaid\":2925000.00,\"voucherCode\":\"AUDIT113847626455\",\"failureReason\":null,\"createdAt\":\"2026-04-15T11:39:03.088999Z\",\"items\":[{\"productId\":\"22222222-2222-2222-2222-222222222222\",\"productNameSnapshot\":\"Adidas Samba OG Wales Bonner\",\"unitPriceSnapshot\":3250000.00,\"qty\":1,\"lineTotal\":3250000.00}]},\"error\":null}"
+  }
+}

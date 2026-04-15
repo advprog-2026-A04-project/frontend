@@ -152,6 +152,20 @@ The concurrency runner writes its own timestamped summary under:
 verification-artifacts/concurrency/<timestamp>/
 ```
 
+## Committed Evidence Snapshot
+
+A curated live evidence bundle is committed under [evidence/live-20260415](./evidence/live-20260415).
+
+It includes:
+- the combined live run summary
+- successful checkout before and after state
+- failed checkout before and after state
+- the insufficient-wallet API failure payload
+- live concurrency summaries
+- representative screenshots for success and failure flows
+
+This is the smallest committed artifact set that still proves the milestone-critical state changes without checking in the entire raw run directory.
+
 ## Example Evidence Produced
 
 Successful checkout scenario writes:
