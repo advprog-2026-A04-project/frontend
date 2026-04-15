@@ -22,7 +22,7 @@ export default function ProductDetailPage() {
       try {
         const data = await api.getProduct(productId);
         if (!cancelled) {
-          setProduct(data.product);
+          setProduct(data);
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -43,7 +43,7 @@ export default function ProductDetailPage() {
   }, [productId]);
 
   if (loading) {
-    return <LoadingState label="Loading product…" />;
+    return <LoadingState label="Loading product..." />;
   }
 
   if (error || !product) {

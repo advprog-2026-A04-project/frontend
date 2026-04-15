@@ -21,7 +21,7 @@ export default function OrderResultPage() {
       try {
         const data = await api.getOrder(orderId);
         if (!cancelled) {
-          setOrder(data.order);
+          setOrder(data);
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -42,7 +42,7 @@ export default function OrderResultPage() {
   }, [orderId]);
 
   if (loading) {
-    return <LoadingState label="Loading order result…" />;
+    return <LoadingState label="Loading order result..." />;
   }
 
   if (error || !order) {
@@ -69,7 +69,7 @@ export default function OrderResultPage() {
         <div className="summary-list">
           <div className="summary-row">
             <span>Payment status</span>
-            <strong>{order.paymentStatus}</strong>
+            <strong>{order.status === 'PAID' ? 'PAID' : order.status}</strong>
           </div>
           <div className="summary-row">
             <span>Created at</span>
@@ -82,10 +82,6 @@ export default function OrderResultPage() {
           <div className="summary-row">
             <span>Voucher</span>
             <strong>{order.voucherCode || '-'}</strong>
-          </div>
-          <div className="summary-row">
-            <span>Voucher outcome</span>
-            <strong>{order.voucherMessage}</strong>
           </div>
           <div className="summary-row">
             <span>Subtotal</span>
@@ -101,11 +97,7 @@ export default function OrderResultPage() {
           </div>
         </div>
 
-        {order.failureReason && (
-          <div className="notice notice--danger">
-            <strong>{order.failureReason.code}</strong>: {order.failureReason.message}
-          </div>
-        )}
+        {order.failureReason && <div className="notice notice--danger">{order.failureReason}</div>}
 
         <div className="button-row">
           <Link className="button" to="/orders">
@@ -123,11 +115,11 @@ export default function OrderResultPage() {
           {order.items.map((item) => (
             <div className="service-panel" key={`${order.id}-${item.productId}`}>
               <div className="service-panel__top">
-                <strong>{item.productName}</strong>
-                <span className="pill">{item.quantity} pcs</span>
+                <strong>{item.productNameSnapshot}</strong>
+                <span className="pill">{item.qty} pcs</span>
               </div>
               <p className="muted">
-                Unit price {formatCurrency(item.unitPrice)}. Line total {formatCurrency(item.lineTotal)}.
+                Unit price {formatCurrency(item.unitPriceSnapshot)}. Line total {formatCurrency(item.lineTotal)}.
               </p>
             </div>
           ))}

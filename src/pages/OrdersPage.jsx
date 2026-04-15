@@ -19,7 +19,7 @@ export default function OrdersPage() {
       try {
         const data = await api.listOrders();
         if (!cancelled) {
-          setOrders(data.items);
+          setOrders(data);
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -40,7 +40,7 @@ export default function OrdersPage() {
   }, []);
 
   if (loading) {
-    return <LoadingState label="Loading orders…" />;
+    return <LoadingState label="Loading orders..." />;
   }
 
   return (
@@ -58,7 +58,7 @@ export default function OrdersPage() {
         {!error && orders.length === 0 && (
           <div className="empty-state">
             <h2>No orders yet.</h2>
-            <p>The first checkout attempt will show up here, even if it fails validation.</p>
+            <p>The first successful checkout will show up here after payment is completed.</p>
           </div>
         )}
 

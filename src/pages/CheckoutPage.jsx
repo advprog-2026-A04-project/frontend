@@ -1,10 +1,12 @@
 import { startTransition, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import LoadingState from '../components/LoadingState';
+import { useSession } from '../context/SessionContext';
 import { api } from '../lib/api';
 import { formatCurrency } from '../lib/format';
 
 export default function CheckoutPage() {
+  const { user } = useSession();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const productId = searchParams.get('productId');
@@ -16,11 +18,9 @@ export default function CheckoutPage() {
   const [form, setForm] = useState({
     quantity: initialQty,
     shippingAddress: 'Jl. Mawar No. 1, Jakarta',
-    voucherCode: 'MILESTONE10',
+    voucherCode: '',
   });
-  const [voucherPreview, setVoucherPreview] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [validatingVoucher, setValidatingVoucher] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -32,7 +32,31 @@ export default function CheckoutPage() {
     return product.price * form.quantity;
   }, [product, form.quantity]);
 
-  const previewTotal = Math.max(subtotal - Number(voucherPreview?.discountAmount || 0), 0);
+  const normalizedVoucherCode = form.voucherCode.trim().toUpperCase();
+
+  const matchedVoucher = useMemo(
+    () => vouchers.find((voucher) => voucher.code === normalizedVoucherCode) || null,
+    [normalizedVoucherCode, vouchers],
+  );
+
+  const estimatedDiscount = useMemo(() => {
+    if (!matchedVoucher) {
+      return 0;
+    }
+
+    if (subtotal < Number(matchedVoucher.minSpend || 0)) {
+      return 0;
+    }
+
+    const rawDiscountValue = Number(matchedVoucher.discountValue || 0);
+    if (matchedVoucher.discountType === 'PERCENT') {
+      return Math.floor((subtotal * rawDiscountValue) / 100);
+    }
+
+    return rawDiscountValue;
+  }, [matchedVoucher, subtotal]);
+
+  const estimatedTotal = Math.max(subtotal - estimatedDiscount, 0);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,14 +68,14 @@ export default function CheckoutPage() {
       try {
         const [productResult, walletResult, voucherResult] = await Promise.all([
           api.getProduct(productId),
-          api.getWallet(),
+          api.getWallet(user.id),
           api.listActiveVouchers(),
         ]);
 
         if (!cancelled) {
-          setProduct(productResult.product);
+          setProduct(productResult);
           setWallet(walletResult);
-          setVouchers(voucherResult.items);
+          setVouchers(voucherResult);
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -71,29 +95,7 @@ export default function CheckoutPage() {
     return () => {
       cancelled = true;
     };
-  }, [productId]);
-
-  async function handleVoucherCheck() {
-    if (!form.voucherCode.trim()) {
-      setVoucherPreview(null);
-      return;
-    }
-
-    setValidatingVoucher(true);
-    setError('');
-
-    try {
-      const result = await api.validateVoucher({
-        code: form.voucherCode,
-        orderAmount: subtotal,
-      });
-      setVoucherPreview(result);
-    } catch (validationError) {
-      setError(validationError.message);
-    } finally {
-      setValidatingVoucher(false);
-    }
-  }
+  }, [productId, user.id]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -109,10 +111,10 @@ export default function CheckoutPage() {
       });
 
       startTransition(() => {
-        navigate(`/orders/${result.order.id}`, {
+        navigate(`/orders/${result.id}`, {
           state: {
-            flash: result.message,
-            success: result.success,
+            flash: 'Checkout completed successfully and the order is now paid.',
+            success: true,
           },
         });
       });
@@ -132,7 +134,7 @@ export default function CheckoutPage() {
   }
 
   if (loading) {
-    return <LoadingState label="Preparing checkout…" />;
+    return <LoadingState label="Preparing checkout..." />;
   }
 
   if (error && !product) {
@@ -173,10 +175,9 @@ export default function CheckoutPage() {
                   min={1}
                   type="number"
                   value={form.quantity}
-                  onChange={(event) => {
-                    setForm((current) => ({ ...current, quantity: Number(event.target.value) }));
-                    setVoucherPreview(null);
-                  }}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, quantity: Number(event.target.value) }))
+                  }
                 />
               </label>
 
@@ -186,35 +187,25 @@ export default function CheckoutPage() {
                   className="input"
                   placeholder="MILESTONE10"
                   value={form.voucherCode}
-                  onChange={(event) => {
-                    setForm((current) => ({ ...current, voucherCode: event.target.value.toUpperCase() }));
-                    setVoucherPreview(null);
-                  }}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, voucherCode: event.target.value.toUpperCase() }))
+                  }
                 />
               </label>
             </div>
 
-            <button
-              className="button button--secondary"
-              disabled={validatingVoucher}
-              onClick={handleVoucherCheck}
-              type="button"
-            >
-              {validatingVoucher ? 'Checking voucher…' : 'Validate voucher'}
-            </button>
-
-            {voucherPreview && (
-              <div className={`notice ${voucherPreview.valid ? 'notice--success' : 'notice--danger'}`}>
-                {voucherPreview.valid
-                  ? `Voucher valid. Discount ${formatCurrency(voucherPreview.discountAmount)}.`
-                  : voucherPreview.message}
+            {normalizedVoucherCode && (
+              <div className={`notice ${matchedVoucher ? 'notice--success' : 'notice--danger'}`}>
+                {matchedVoucher
+                  ? `Code ${matchedVoucher.code} is currently active. Final validation and quota claim happen during checkout.`
+                  : 'This code is not in the active voucher list. Order will reject invalid vouchers.'}
               </div>
             )}
 
             {error && <div className="notice notice--danger">{error}</div>}
 
             <button className="button button--block" disabled={submitting} type="submit">
-              {submitting ? 'Processing checkout…' : 'Create order and pay'}
+              {submitting ? 'Processing checkout...' : 'Create order and pay'}
             </button>
           </form>
         </article>
@@ -232,18 +223,19 @@ export default function CheckoutPage() {
                 <strong>{formatCurrency(subtotal)}</strong>
               </div>
               <div className="summary-row">
-                <span>Discount</span>
-                <strong>{formatCurrency(voucherPreview?.discountAmount || 0)}</strong>
+                <span>Estimated discount</span>
+                <strong>{formatCurrency(estimatedDiscount)}</strong>
               </div>
               <div className="summary-row summary-row--total">
-                <span>Total to pay</span>
-                <strong>{formatCurrency(previewTotal)}</strong>
+                <span>Estimated total</span>
+                <strong>{formatCurrency(estimatedTotal)}</strong>
               </div>
               <div className="summary-row">
                 <span>Wallet balance</span>
                 <strong>{formatCurrency(wallet?.balance)}</strong>
               </div>
             </div>
+            <p className="muted">Order calculates the final payable amount after real voucher validation.</p>
           </article>
 
           <article className="card">

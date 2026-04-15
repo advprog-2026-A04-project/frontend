@@ -22,11 +22,12 @@ export default function AppShell() {
             <span className="brand__mark">25/50</span>
             <span>
               <strong>JSON Frontend</strong>
-              <small>Milestone demo only</small>
+              <small>Real microservice demo</small>
             </span>
           </NavLink>
           <p className="brand-copy">
-            Register, login, browse, top up, and finish checkout with live voucher validation.
+            Register, log in, browse, top up, and check out through the real Auth, Inventory,
+            Wallet, Order, and Voucher services.
           </p>
         </div>
 
@@ -53,7 +54,7 @@ export default function AppShell() {
           {isAuthenticated ? (
             <>
               <div className="user-chip">
-                <span>{user.username}</span>
+                <span>{user.fullName || user.username}</span>
                 <small>{user.email}</small>
               </div>
               <button className="button button--ghost" onClick={handleLogout} type="button">
