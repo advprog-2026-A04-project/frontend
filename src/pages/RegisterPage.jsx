@@ -10,19 +10,16 @@ export default function RegisterPage() {
     username: '',
     password: '',
   });
-  const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
     setError('');
-    setMessage('');
     setSubmitting(true);
 
     try {
       const result = await register(form);
-      setMessage(result.message);
       navigate('/login', {
         state: {
           flash: result.message,
@@ -83,11 +80,10 @@ export default function RegisterPage() {
             />
           </label>
 
-          {message && <div className="notice notice--success">{message}</div>}
           {error && <div className="notice notice--danger">{error}</div>}
 
           <button className="button button--block" disabled={submitting} type="submit">
-            {submitting ? 'Creating account…' : 'Register'}
+            {submitting ? 'Creating account...' : 'Register'}
           </button>
         </form>
 

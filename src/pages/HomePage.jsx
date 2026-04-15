@@ -13,15 +13,10 @@ export default function HomePage() {
     let cancelled = false;
 
     async function loadHealth() {
-      try {
-        const data = await api.getHealth();
-        if (!cancelled) {
-          setHealth(data);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+      const data = await api.getHealth();
+      if (!cancelled) {
+        setHealth(data);
+        setLoading(false);
       }
     }
 
@@ -37,10 +32,10 @@ export default function HomePage() {
       <div className="hero-grid">
         <article className="hero-panel hero-panel--primary">
           <p className="eyebrow">Project scope</p>
-          <h1>Milestone 25% and 50% only.</h1>
+          <h1>Milestone 25% and 50% with the real services.</h1>
           <p className="lead">
-            This app focuses on the flows that matter for the demo: account access, product browsing,
-            checkout with voucher input, wallet validation, inventory validation, and visible order results.
+            This frontend talks directly to the real Auth/Profile, Inventory, Wallet, Order, and
+            Voucher deployments. It focuses only on the flows required for Milestone 25% and 50%.
           </p>
           <div className="hero-actions">
             <Link className="button" to={isAuthenticated ? '/products' : '/register'}>
@@ -48,7 +43,7 @@ export default function HomePage() {
             </Link>
             {!isAuthenticated && (
               <Link className="button button--secondary" to="/login">
-                Use demo login
+                Sign in
               </Link>
             )}
           </div>
@@ -57,11 +52,11 @@ export default function HomePage() {
         <article className="hero-panel">
           <p className="eyebrow">What is included</p>
           <ul className="checklist">
-            <li>Register and log in with a stable demo session flow.</li>
-            <li>Browse a usable product catalog and open product details.</li>
-            <li>Use a wallet page with immediate top-up for demo purposes.</li>
-            <li>Validate vouchers against the live Voucher service.</li>
-            <li>Complete or fail checkout with clear order outcomes.</li>
+            <li>Register and log in through Auth/Profile with bearer-token auth.</li>
+            <li>Browse inventory products and open product details.</li>
+            <li>Use Wallet balance and top-up to support the payment flow.</li>
+            <li>Submit voucher codes to Order for real integrated validation.</li>
+            <li>Complete or fail checkout with visible order outcomes.</li>
           </ul>
         </article>
       </div>
@@ -79,7 +74,7 @@ export default function HomePage() {
             <li>Register page and login page are both present.</li>
             <li>Products can be browsed and opened in detail view.</li>
             <li>Checkout always includes a voucher code field.</li>
-            <li>Submitting checkout creates an order record immediately.</li>
+            <li>Submitting checkout creates an order through the real Order service.</li>
           </ul>
         </article>
 
@@ -92,10 +87,10 @@ export default function HomePage() {
             <span className="pill pill--success">Required</span>
           </div>
           <ul className="checklist">
-            <li>Inventory is checked before payment is recorded.</li>
-            <li>Voucher validation and claim use the live voucher deployment.</li>
-            <li>Wallet balance is validated before the order becomes paid.</li>
-            <li>Success and failure both update visible order/payment outcomes.</li>
+            <li>Order orchestrates Inventory, Voucher, and Wallet during checkout.</li>
+            <li>Inventory stock is checked before payment is recorded.</li>
+            <li>Voucher validation and claim happen inside the real checkout path.</li>
+            <li>Success and failure both produce clear, visible outcomes.</li>
           </ul>
         </article>
       </div>
@@ -104,40 +99,35 @@ export default function HomePage() {
         <div className="section-head">
           <div>
             <p className="eyebrow">Environment snapshot</p>
-            <h2>Current integration mode</h2>
+            <h2>Configured service health</h2>
           </div>
         </div>
 
-        {loading && <LoadingState label="Checking service modes…" />}
+        {loading && <LoadingState label="Checking service health..." />}
 
         {!loading && health && (
           <>
             <div className="grid-two">
-              {Object.entries(health.services).map(([serviceName, details]) => (
-                <section className="service-panel" key={serviceName}>
+              {health.services.map((service) => (
+                <section className="service-panel" key={service.key}>
                   <div className="service-panel__top">
-                    <strong>{serviceName}</strong>
-                    <span
-                      className={`pill ${
-                        details.mode === 'live' ? 'pill--success' : details.mode === 'degraded' ? 'pill--warn' : ''
-                      }`}
-                    >
-                      {details.mode}
+                    <strong>{service.name}</strong>
+                    <span className={`pill ${service.status === 'UP' ? 'pill--success' : 'pill--warn'}`}>
+                      {service.status}
                     </span>
                   </div>
-                  <p className="muted">{details.note}</p>
+                  <p className="muted">{service.note}</p>
+                  <p className="muted">{service.detail}</p>
+                  <a href={service.baseUrl} rel="noreferrer" target="_blank">
+                    {service.baseUrl}
+                  </a>
                 </section>
               ))}
             </div>
 
             <div className="demo-bar">
-              <span>
-                Demo login: <strong>{health.demoCredentials.email}</strong> /{' '}
-                <strong>{health.demoCredentials.password}</strong>
-              </span>
-              <span>
-                Demo voucher: <strong>{health.demoVoucherCode}</strong>
-              </span>
+              <span>Register a fresh account or sign in with an existing buyer account.</span>
+              <span>Voucher validation is finalized by Order during checkout.</span>
             </div>
           </>
         )}

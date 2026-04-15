@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import LoadingState from '../components/LoadingState';
+import { useSession } from '../context/SessionContext';
 import { api } from '../lib/api';
 import { formatCurrency } from '../lib/format';
 
 export default function WalletPage() {
+  const { user } = useSession();
   const [wallet, setWallet] = useState(null);
-  const [amount, setAmount] = useState(1_000_000);
+  const [amount, setAmount] = useState(100000);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -19,7 +21,7 @@ export default function WalletPage() {
       setError('');
 
       try {
-        const data = await api.getWallet();
+        const data = await api.getWallet(user.id);
         if (!cancelled) {
           setWallet(data);
         }
@@ -39,7 +41,7 @@ export default function WalletPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [user.id]);
 
   async function handleTopUp(event) {
     event.preventDefault();
@@ -48,12 +50,11 @@ export default function WalletPage() {
     setMessage('');
 
     try {
-      const result = await api.topUpWallet(amount);
-      setWallet((current) => ({
-        ...(current || { currency: 'IDR' }),
-        balance: result.balance,
-      }));
-      setMessage(`Top-up successful. Transaction ${result.transactionId} added ${formatCurrency(result.amount)}.`);
+      const result = await api.topUpWallet(user.id, amount);
+      setWallet(result);
+      setMessage(
+        `Top-up completed. Request ${result.requestId} was marked successful and the new balance is ${formatCurrency(result.balance)}.`,
+      );
     } catch (submissionError) {
       setError(submissionError.message);
     } finally {
@@ -62,7 +63,7 @@ export default function WalletPage() {
   }
 
   if (loading) {
-    return <LoadingState label="Loading wallet…" />;
+    return <LoadingState label="Loading wallet..." />;
   }
 
   return (
@@ -72,8 +73,8 @@ export default function WalletPage() {
           <p className="eyebrow">Wallet</p>
           <h1>{formatCurrency(wallet?.balance)}</h1>
           <p className="lead lead--compact">
-            This page exists to support the milestone 50% flow: top up, re-check balance, and retry
-            checkout after a failed payment.
+            This page supports the milestone 50% flow: read the real wallet balance, top up for a
+            demo purchase, and retry checkout after a failed payment.
           </p>
         </article>
 
@@ -102,7 +103,7 @@ export default function WalletPage() {
             {error && <div className="notice notice--danger">{error}</div>}
 
             <button className="button button--block" disabled={submitting} type="submit">
-              {submitting ? 'Processing…' : 'Top up wallet'}
+              {submitting ? 'Processing...' : 'Top up wallet'}
             </button>
           </form>
         </article>

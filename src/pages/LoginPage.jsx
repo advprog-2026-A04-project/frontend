@@ -1,18 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSession } from '../context/SessionContext';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useSession();
+  const { isAuthenticated, login } = useSession();
 
   const [form, setForm] = useState({
-    email: location.state?.email || 'demo@json.app',
-    password: 'Demo123!',
+    email: location.state?.email || '',
+    password: '',
   });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(location.state?.from || '/products', { replace: true });
+    }
+  }, [isAuthenticated, location.state, navigate]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -21,7 +27,6 @@ export default function LoginPage() {
 
     try {
       await login(form);
-      navigate(location.state?.from || '/products');
     } catch (submissionError) {
       setError(submissionError.message);
     } finally {
@@ -37,7 +42,7 @@ export default function LoginPage() {
             <p className="eyebrow">Account</p>
             <h1>Log in to continue</h1>
           </div>
-          <span className="pill pill--success">Demo-ready</span>
+          <span className="pill pill--success">JWT session</span>
         </div>
 
         {location.state?.flash && <div className="notice notice--success">{location.state.flash}</div>}
@@ -68,21 +73,12 @@ export default function LoginPage() {
           {error && <div className="notice notice--danger">{error}</div>}
 
           <button className="button button--block" disabled={submitting} type="submit">
-            {submitting ? 'Logging in…' : 'Log in'}
+            {submitting ? 'Logging in...' : 'Log in'}
           </button>
         </form>
 
-        <div className="demo-bar demo-bar--stack">
-          <span>
-            Demo account: <strong>demo@json.app</strong>
-          </span>
-          <span>
-            Password: <strong>Demo123!</strong>
-          </span>
-        </div>
-
         <p className="muted">
-          Need a fresh user? <Link to="/register">Create one now</Link>.
+          Need a buyer account? <Link to="/register">Create one now</Link>.
         </p>
       </article>
     </section>
