@@ -8,6 +8,17 @@ This document records the Milestone `75%` deployment, deployed smoke verificatio
 - `services/Order`
 - `services/Auth-Profile`
 
+The deployed buyer-facing UI now follows the newer attached frontend source:
+
+- `remix_-json-limited-drops (1).zip`
+
+The previous frontend implementation is retained only where it was already proven:
+
+- centralized API integration in `src/lib/api.js`
+- route and backend contracts
+- admin and jastiper operational pages
+- Selenium and deployment compatibility
+
 ## Target Platform
 
 Google Cloud Run, region `us-central1`
@@ -17,22 +28,19 @@ Google Cloud Run, region `us-central1`
 Frontend:
 
 - URL: `https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app`
-- Revision: `advprog-frontend-m25-m50-00008-ggv`
-- Revision created at: `2026-05-03T17:35:51.285211Z`
-- Commit deployed: `05ef30a` (`Improve frontend verification safety`)
+- Revision: `advprog-frontend-m25-m50-00009-tkj`
+- Commit deployed: `a2a07d9` (`Merge origin/main with current frontend`)
 
 Auth/Profile:
 
 - URL: `https://auth-profile-api-osvihgaoya-uc.a.run.app`
-- Revision: `auth-profile-api-00006-vgr`
-- Revision created at: `2026-05-03T17:37:40.551245Z`
-- Commit deployed: `91fb089` (`Harden demo account seeding`)
+- Revision: `auth-profile-api-00007-8ht`
+- Commit deployed: `0ea5a5b` (`Make demo seeding opt-in`)
 
 Order:
 
 - URL: `https://order-api-osvihgaoya-uc.a.run.app`
 - Revision: `order-api-00005-bjr`
-- Revision created at: `2026-05-03T17:04:05.447586Z`
 - Commit deployed: `4ad26bf` (`Update order deployment notes`)
 
 Supporting services used by the deployed frontend:
@@ -43,33 +51,27 @@ Supporting services used by the deployed frontend:
 
 Verification timestamp recorded locally:
 
-- `2026-05-04T00:39:58+07:00`
+- `2026-05-04T02:21:36+07:00`
 
 ## Deployment Commands Run
-
-The final deployment pass was run after creating the follow-up commits above so the live revisions align with committed source.
 
 Auth/Profile:
 
 ```bash
-gcloud run deploy auth-profile-api --source . --region us-central1 --allow-unauthenticated --max-instances=1 --update-env-vars APP_DEMO_SEED_ENABLED=true --remove-env-vars APP_DEMO_ACCOUNTS_ENABLED --quiet
-```
-
-Order:
-
-```bash
-gcloud run deploy order-api --source . --region us-central1 --allow-unauthenticated --max-instances=1 --quiet
+gcloud run deploy auth-profile-api --source . --region us-central1 --allow-unauthenticated --update-env-vars APP_DEMO_SEED_ENABLED=true
 ```
 
 Frontend:
 
 ```bash
-gcloud run deploy advprog-frontend-m25-m50 --source . --region us-central1 --allow-unauthenticated --quiet
+gcloud run deploy advprog-frontend-m25-m50 --source . --region us-central1 --allow-unauthenticated
 ```
+
+Order was not redeployed in this follow-up because frontend/API compatibility did not require a new Order revision.
 
 ## Frontend Environment Contract
 
-The deployed frontend build uses the direct-service Vite variables from `.env.production`:
+The deployed frontend build no longer depends on a committed `.env.production`. It uses either explicit `VITE_*` overrides or the built-in deployed fallbacks in `src/lib/api.js`:
 
 - `VITE_AUTH_BASE_URL`
 - `VITE_INVENTORY_BASE_URL`
@@ -77,19 +79,19 @@ The deployed frontend build uses the direct-service Vite variables from `.env.pr
 - `VITE_ORDER_BASE_URL`
 - `VITE_VOUCHER_BASE_URL`
 
-The frontend build does not embed the voucher admin token. The admin UI now requires manual token entry at runtime and masks the field to avoid exposing the token in screenshots.
+The frontend build does not embed the voucher admin token. The admin UI requires manual token entry at runtime and masks the field to avoid exposing the token in screenshots.
 
 ## Auth Demo Account Safety
 
-`APP_DEMO_SEED_ENABLED` now defaults to `false` in code.
+`APP_DEMO_SEED_ENABLED` now defaults to `false` in every profile, including `demo`.
 
-For the public milestone demo deployment, Cloud Run was explicitly updated with:
+For the public milestone demo deployment, Cloud Run is explicitly configured with:
 
 ```env
 APP_DEMO_SEED_ENABLED=true
 ```
 
-This keeps seeded buyer/jastiper/admin demo accounts available for the deployed milestone demo while avoiding silent seeding in production-like environments by default. Legacy compatibility with `APP_DEMO_ACCOUNTS_ENABLED` is still supported, but new deployments should use `APP_DEMO_SEED_ENABLED`.
+That keeps seeded buyer, jastiper, and admin accounts available for the shared demo while avoiding silent seeding in production-like environments by default. Legacy compatibility with `APP_DEMO_ACCOUNTS_ENABLED` is still supported, but new deployments should use `APP_DEMO_SEED_ENABLED`.
 
 ## Test and Build Commands
 
@@ -99,6 +101,9 @@ Frontend:
 npm test
 npm run build
 npm run lint
+npx -y -p node@20.19.0 -p npm@10 npm test
+npx -y -p node@20.19.0 -p npm@10 npm run build
+npx -y -p node@20.19.0 -p npm@10 npm run lint
 ```
 
 Auth/Profile:
@@ -107,18 +112,18 @@ Auth/Profile:
 ./gradlew test
 ```
 
-Order:
-
-```bash
-cd backend
-./gradlew test
-```
-
 Deployed Selenium:
 
 ```bash
 cd verification/selenium-verifier
-.venv\Scripts\pytest tests/test_live_verification.py -m live -s --html=verification-artifacts\live-report-final.html --self-contained-html
+.venv\Scripts\python -m pytest tests/test_live_verification.py -m live -s --html=verification-artifacts\live-report-current-ui.html --self-contained-html
+```
+
+Local Selenium:
+
+```bash
+cd verification/selenium-verifier
+.venv\Scripts\python -m pytest tests/test_live_verification.py -m live -s --html=verification-artifacts\local-report-current-ui.html --self-contained-html
 ```
 
 ## Results
@@ -126,10 +131,12 @@ cd verification/selenium-verifier
 ### Build and Unit Test Results
 
 - frontend `npm test`: passed
-- frontend `npm run build`: passed
+- frontend `npm run build`: passed on host Node `20.16.0`, with the expected Vite upgrade warning
 - frontend `npm run lint`: passed
+- frontend `npm test` under Node `20.19.0`: passed
+- frontend `npm run build` under Node `20.19.0`: passed
+- frontend `npm run lint` under Node `20.19.0`: passed
 - Auth/Profile `./gradlew test`: passed
-- Order `backend/./gradlew test`: passed
 
 ### Deployed Health Checks
 
@@ -170,14 +177,14 @@ Final deployed run:
 
 - status: passed
 - scenarios: `6/6`
-- browser: `chrome` headless
+- browser: `edge` headless
 
 Final evidence set:
 
-- summary: [verification-artifacts/20260504-003951/summary.json](./verification/selenium-verifier/verification-artifacts/20260504-003951/summary.json)
-- html report: [verification-artifacts/live-report-final.html](./verification/selenium-verifier/verification-artifacts/live-report-final.html)
+- summary: [verification-artifacts/20260504-022136/summary.json](./verification/selenium-verifier/verification-artifacts/20260504-022136/summary.json)
+- html report: [verification-artifacts/live-report-current-ui.html](./verification/selenium-verifier/verification-artifacts/live-report-current-ui.html)
 
-Intermediate failed reruns were kept as raw evidence during selector stabilization and local-origin tuning and are not the final verdict.
+One earlier rerun failed during Cloud Run warm-up after the frontend deployment. The final rerun above is the authoritative deployed result.
 
 ## Local Selenium Status
 
@@ -185,15 +192,20 @@ Final local run:
 
 - status: passed
 - scenarios: `6/6`
-- browser: `chrome` headless
+- browser: `edge` headless
 - frontend URL: `http://localhost:5173`
 
 Local evidence set:
 
-- summary: [verification-artifacts/20260504-003250/summary.json](./verification/selenium-verifier/verification-artifacts/20260504-003250/summary.json)
-- html report: [verification-artifacts/local-report-pass.html](./verification/selenium-verifier/verification-artifacts/local-report-pass.html)
+- summary: [verification-artifacts/20260504-020331/summary.json](./verification/selenium-verifier/verification-artifacts/20260504-020331/summary.json)
+- html report: [verification-artifacts/local-report-current-ui.html](./verification/selenium-verifier/verification-artifacts/local-report-current-ui.html)
 
-One earlier local rerun failed because `127.0.0.1` did not match the default backend CORS origin list. The final local run uses `http://localhost:5173`, which matches the default local service configuration.
+Earlier local reruns failed for two reasons that are now fixed:
+
+- `127.0.0.1` did not match the default backend CORS origin list.
+- generic product selection could assign a lifecycle order to the wrong jastiper owner when seeded stock drifted.
+
+The final local run uses `http://localhost:5173`, the seeded `jastiper3@json.app` account, and the seeded product `55555555-5555-5555-5555-555555555555` for deterministic ownership.
 
 ## Concurrency Verification Boundary
 
@@ -206,14 +218,14 @@ Those destructive concurrency checks were not run against the shared Cloud Run d
 - `VOUCHER_ADMIN_TOKEN` is required for the admin voucher scenario.
 - The token value used for deployed verification was read from Cloud Run configuration locally and was not committed into source control.
 - The frontend no longer supports a `VITE_` voucher admin token path. Token entry is runtime-only.
-- Demo-role accounts require `APP_DEMO_SEED_ENABLED=true` or the `demo` Spring profile in Auth when running a local demo stack.
+- Demo-role accounts require `APP_DEMO_SEED_ENABLED=true` when running a local demo stack.
 
 ## Evidence Notes
 
 Verifier artifacts include:
 
 - scenario screenshots
-- raw API request/response JSON for state proof
+- raw API request and response JSON for state proof
 - per-scenario `details.json` or `failure.json`
 - run `summary.json`
 
