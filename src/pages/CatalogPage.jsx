@@ -20,7 +20,7 @@ export default function CatalogPage() {
       try {
         const data = await api.listProducts(deferredQuery);
         if (!cancelled) {
-          setProducts(data.items);
+          setProducts(data);
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -62,7 +62,7 @@ export default function CatalogPage() {
         </label>
       </article>
 
-      {loading && <LoadingState label="Loading catalog…" />}
+      {loading && <LoadingState label="Loading catalog..." />}
       {error && <div className="notice notice--danger">{error}</div>}
 
       {!loading && !error && products.length === 0 && (

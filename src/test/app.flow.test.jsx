@@ -37,16 +37,15 @@ describe('frontend milestone flow', () => {
     window.history.pushState({}, '', '/register');
 
     installFetchMock({
-      'POST /api/auth/register': {
+      'POST /auth/register': {
         status: 201,
         body: {
-          message: 'Registration successful. You can log in immediately.',
-          user: {
-            id: 2001,
-            email: 'new@json.app',
-            username: 'new-user',
-            role: 'TITIPER',
-          },
+          token: 'session-registered',
+          id: 2004,
+          email: 'new@json.app',
+          username: 'new-user',
+          fullName: 'new-user',
+          role: 'TITIPER',
         },
       },
     });
@@ -63,14 +62,13 @@ describe('frontend milestone flow', () => {
     expect(screen.getByDisplayValue('new@json.app')).toBeInTheDocument();
   });
 
-  it('logs in, browses products, validates voucher, and completes checkout', async () => {
+  it('logs in, browses products, and completes checkout with a voucher code', async () => {
     window.history.pushState({}, '', '/login');
 
     const product = {
-      id: 6,
+      id: '66666666-6666-6666-6666-666666666666',
       name: 'Rare Sonny Angel Winter Wonderland',
       description: 'Collectible dengan harga aman untuk milestone 25% browse and checkout.',
-      category: 'Collectible',
       price: 780000,
       stock: 15,
       originLocation: 'South Korea',
@@ -79,98 +77,98 @@ describe('frontend milestone flow', () => {
     };
 
     const order = {
-      id: 'ORD-1001',
+      id: 1001,
+      buyerId: 1000,
+      jastiperId: 2003,
       status: 'PAID',
-      paymentStatus: 'SUCCESS',
       shippingAddress: 'Jl. Mawar No. 1, Jakarta',
       voucherCode: 'MILESTONE10',
-      voucherMessage: 'Voucher claimed successfully.',
       subtotal: 780000,
       discountTotal: 78000,
       totalPaid: 702000,
       createdAt: '2026-04-14T12:00:00Z',
+      updatedAt: '2026-04-14T12:05:00Z',
+      refundDone: false,
       items: [
         {
-          productId: 6,
-          productName: product.name,
-          quantity: 1,
-          unitPrice: 780000,
+          productId: product.id,
+          productNameSnapshot: product.name,
+          qty: 1,
+          unitPriceSnapshot: 780000,
           lineTotal: 780000,
         },
       ],
     };
 
     installFetchMock({
-      'POST /api/auth/login': {
+      'POST /auth/login': {
         body: {
           token: 'session-1',
-          user: {
-            id: 1000,
-            email: 'demo@json.app',
-            username: 'Demo Buyer',
-            role: 'TITIPER',
-            walletBalance: 2000000,
+          id: 1000,
+          email: 'demo@json.app',
+          username: 'Demo Buyer',
+          fullName: 'Demo Buyer',
+          role: 'TITIPER',
+        },
+      },
+      'GET /auth/me': {
+        body: {
+          id: 1000,
+          email: 'demo@json.app',
+          username: 'Demo Buyer',
+          fullName: 'Demo Buyer',
+          role: 'TITIPER',
+        },
+      },
+      'GET /api/products/search': {
+        body: [product],
+      },
+      'GET /api/products/66666666-6666-6666-6666-666666666666': {
+        body: product,
+      },
+      'POST /wallet/balance': ({ body }) => {
+        expect(body).toEqual({ userId: 1000 });
+        return {
+          body: {
+            userId: 1000,
+            balance: 2000000,
+            currency: 'IDR',
           },
-        },
+        };
       },
-      'GET /api/session': {
-        body: {
-          user: {
-            id: 1000,
-            email: 'demo@json.app',
-            username: 'Demo Buyer',
-            role: 'TITIPER',
-            walletBalance: 2000000,
+      'GET /vouchers/active': {
+        body: [
+          {
+            code: 'MILESTONE10',
+            discountType: 'PERCENT',
+            discountValue: 10,
+            minSpend: 100000,
           },
-        },
+        ],
       },
-      'GET /api/products': {
-        body: {
-          items: [product],
-        },
-      },
-      'GET /api/products/6': {
-        body: {
-          product,
-        },
-      },
-      'GET /api/wallet': {
-        body: {
-          balance: 2000000,
-          currency: 'IDR',
-        },
-      },
-      'GET /api/vouchers/active': {
-        body: {
+      'POST /orders/checkout': ({ body }) => {
+        expect(body).toEqual({
+          address: 'Jl. Mawar No. 1, Jakarta',
+          voucherCode: 'MILESTONE10',
           items: [
             {
-              code: 'MILESTONE10',
-              discountType: 'PERCENT',
-              discountValue: 10,
-              minSpend: 100000,
+              productId: product.id,
+              qty: 1,
             },
           ],
-        },
+        });
+        return {
+          status: 201,
+          body: {
+            success: true,
+            data: order,
+          },
+        };
       },
-      'POST /api/vouchers/validate': {
-        body: {
-          valid: true,
-          discountAmount: 78000,
-          code: 'MILESTONE10',
-          message: 'ok',
-        },
-      },
-      'POST /api/checkout': {
-        status: 201,
+      'GET /orders/1001': {
         body: {
           success: true,
-          message: 'Checkout completed and payment recorded.',
-          order,
-        },
-      },
-      'GET /api/orders/ORD-1001': {
-        body: {
-          order,
+          data: order,
         },
       },
     });
@@ -187,18 +185,18 @@ describe('frontend milestone flow', () => {
     await user.click(screen.getByRole('button', { name: /buy now/i }));
     expect(await screen.findByRole('heading', { name: /finish milestone 50% flow/i })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /validate voucher/i }));
-    expect(await screen.findByText(/voucher valid\. discount/i)).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/voucher code/i), 'MILESTONE10');
+    expect(await screen.findByText(/code milestone10 is currently active/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /create order and pay/i }));
 
-    expect(await screen.findByRole('heading', { name: 'ORD-1001' })).toBeInTheDocument();
-    expect(screen.getByText(/checkout completed and payment recorded/i)).toBeInTheDocument();
-    expect(screen.getByText(/voucher claimed successfully/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '1001' })).toBeInTheDocument();
+    expect(screen.getByText(/checkout completed successfully and the order is now paid/i)).toBeInTheDocument();
+    expect(screen.getByText(/milestone10/i)).toBeInTheDocument();
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        '/api/orders/ORD-1001',
+        'http://localhost:8084/orders/1001',
         expect.objectContaining({
           headers: expect.objectContaining({
             Authorization: 'Bearer session-1',

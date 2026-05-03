@@ -5,7 +5,7 @@ import { useSession } from '../context/SessionContext';
 import { api } from '../lib/api';
 
 export default function HomePage() {
-  const { isAuthenticated } = useSession();
+  const { isAuthenticated, user } = useSession();
   const [health, setHealth] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -36,32 +36,38 @@ export default function HomePage() {
     <section className="page page--home">
       <div className="hero-grid">
         <article className="hero-panel hero-panel--primary">
-          <p className="eyebrow">Project scope</p>
-          <h1>Milestone 25% and 50% only.</h1>
+          <p className="eyebrow">JSON / Milestone 75%</p>
+          <h1>Teammate frontend, live services, full order lifecycle.</h1>
           <p className="lead">
-            This app focuses on the flows that matter for the demo: account access, product browsing,
-            checkout with voucher input, wallet validation, inventory validation, and visible order results.
+            The frontend now targets the official buyer, jastiper, and admin flows from the project brief:
+            browse products, pay through wallet, apply vouchers, track order status, process lifecycle updates,
+            monitor refunds, and manage vouchers from the admin side.
           </p>
           <div className="hero-actions">
             <Link className="button" to={isAuthenticated ? '/products' : '/register'}>
-              {isAuthenticated ? 'Browse products' : 'Start with register'}
+              {isAuthenticated ? 'Open catalog' : 'Create account'}
             </Link>
-            {!isAuthenticated && (
+            {isAuthenticated ? (
+              <Link className="button button--secondary" to="/orders">
+                View my orders
+              </Link>
+            ) : (
               <Link className="button button--secondary" to="/login">
-                Use demo login
+                Log in
               </Link>
             )}
           </div>
         </article>
 
         <article className="hero-panel">
-          <p className="eyebrow">What is included</p>
+          <p className="eyebrow">Current role</p>
+          <h2>{user ? `${user.fullName || user.username} (${user.role})` : 'Guest session'}</h2>
           <ul className="checklist">
-            <li>Register and log in with a stable demo session flow.</li>
-            <li>Browse a usable product catalog and open product details.</li>
-            <li>Use a wallet page with immediate top-up for demo purposes.</li>
-            <li>Validate vouchers against the live Voucher service.</li>
-            <li>Complete or fail checkout with clear order outcomes.</li>
+            <li>Buyer flow: register, login, wallet top-up, checkout, history, and order detail.</li>
+            <li>Jastiper flow: process Paid, Purchased, Shipped, Completed, and Cancelled transitions.</li>
+            <li>Admin flow: monitor orders and manage active, expired, and disabled vouchers.</li>
+            <li>Wallet flow: live balance, top-up, mutation history, and refund visibility.</li>
+            <li>Voucher flow: public active list plus admin create, edit, extend, quota add, and disable.</li>
           </ul>
         </article>
       </div>
@@ -70,32 +76,32 @@ export default function HomePage() {
         <article className="card">
           <div className="section-head">
             <div>
-              <p className="eyebrow">Milestone 25%</p>
-              <h2>Foundation demo</h2>
+              <p className="eyebrow">Buyer</p>
+              <h2>Checkout and tracking</h2>
             </div>
             <span className="pill pill--accent">Required</span>
           </div>
           <ul className="checklist">
-            <li>Register page and login page are both present.</li>
-            <li>Products can be browsed and opened in detail view.</li>
-            <li>Checkout always includes a voucher code field.</li>
-            <li>Submitting checkout creates an order record immediately.</li>
+            <li>Browse products and open detail pages backed by Inventory.</li>
+            <li>Check out with voucher input through the Order orchestrator.</li>
+            <li>See active orders separately from full history.</li>
+            <li>Rate completed orders when the backend accepts it.</li>
           </ul>
         </article>
 
         <article className="card">
           <div className="section-head">
             <div>
-              <p className="eyebrow">Milestone 50%</p>
-              <h2>Integrated checkout demo</h2>
+              <p className="eyebrow">Operations</p>
+              <h2>Lifecycle and control</h2>
             </div>
             <span className="pill pill--success">Required</span>
           </div>
           <ul className="checklist">
-            <li>Inventory is checked before payment is recorded.</li>
-            <li>Voucher validation and claim use the live voucher deployment.</li>
-            <li>Wallet balance is validated before the order becomes paid.</li>
-            <li>Success and failure both update visible order/payment outcomes.</li>
+            <li>Jastipers can move valid orders through the official lifecycle.</li>
+            <li>Cancellation triggers wallet refund and stays idempotent on retries.</li>
+            <li>Admins can inspect system-wide orders from a single view.</li>
+            <li>Voucher admin management stays inside the Voucher service contract.</li>
           </ul>
         </article>
       </div>
@@ -104,40 +110,34 @@ export default function HomePage() {
         <div className="section-head">
           <div>
             <p className="eyebrow">Environment snapshot</p>
-            <h2>Current integration mode</h2>
+            <h2>Live service reachability</h2>
           </div>
         </div>
 
-        {loading && <LoadingState label="Checking service modes…" />}
+        {loading && <LoadingState label="Checking service health..." />}
 
         {!loading && health && (
           <>
             <div className="grid-two">
-              {Object.entries(health.services).map(([serviceName, details]) => (
-                <section className="service-panel" key={serviceName}>
+              {health.services.map((service) => (
+                <section className="service-panel" key={service.key}>
                   <div className="service-panel__top">
-                    <strong>{serviceName}</strong>
-                    <span
-                      className={`pill ${
-                        details.mode === 'live' ? 'pill--success' : details.mode === 'degraded' ? 'pill--warn' : ''
-                      }`}
-                    >
-                      {details.mode}
+                    <strong>{service.name}</strong>
+                    <span className={`pill ${service.status === 'UP' ? 'pill--success' : 'pill--warn'}`}>
+                      {service.status}
                     </span>
                   </div>
-                  <p className="muted">{details.note}</p>
+                  <p className="muted">{service.note}</p>
+                  <p className="muted">{service.detail}</p>
                 </section>
               ))}
             </div>
 
             <div className="demo-bar">
               <span>
-                Demo login: <strong>{health.demoCredentials.email}</strong> /{' '}
-                <strong>{health.demoCredentials.password}</strong>
+                Role-sensitive routes: <strong>/orders</strong>, <strong>/jastiper/orders</strong>, <strong>/admin</strong>
               </span>
-              <span>
-                Demo voucher: <strong>{health.demoVoucherCode}</strong>
-              </span>
+              <span>Voucher admin token is required for mutating voucher operations.</span>
             </div>
           </>
         )}

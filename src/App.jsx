@@ -2,9 +2,11 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import AppShell from './components/AppShell';
 import ProtectedRoute from './components/ProtectedRoute';
 import { SessionProvider } from './context/SessionContext';
+import AdminPage from './pages/AdminPage';
 import CatalogPage from './pages/CatalogPage';
 import CheckoutPage from './pages/CheckoutPage';
 import HomePage from './pages/HomePage';
+import JastiperOrdersPage from './pages/JastiperOrdersPage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
 import OrderResultPage from './pages/OrderResultPage';
@@ -30,6 +32,14 @@ function App() {
               <Route element={<WalletPage />} path="wallet" />
               <Route element={<OrdersPage />} path="orders" />
               <Route element={<OrderResultPage />} path="orders/:orderId" />
+            </Route>
+
+            <Route element={<ProtectedRoute roles={['JASTIPER', 'ADMIN']} />}>
+              <Route element={<JastiperOrdersPage />} path="jastiper/orders" />
+            </Route>
+
+            <Route element={<ProtectedRoute roles={['ADMIN']} />}>
+              <Route element={<AdminPage />} path="admin" />
             </Route>
 
             <Route element={<NotFoundPage />} path="*" />

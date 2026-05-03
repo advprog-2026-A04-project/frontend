@@ -8,6 +8,8 @@ function navigationClassName({ isActive }) {
 export default function AppShell() {
   const navigate = useNavigate();
   const { isAuthenticated, logout, user } = useSession();
+  const isAdmin = user?.role === 'ADMIN';
+  const isJastiper = user?.role === 'JASTIPER';
 
   async function handleLogout() {
     await logout();
@@ -19,14 +21,14 @@ export default function AppShell() {
       <header className="site-header">
         <div className="brand-block">
           <NavLink className="brand" to="/">
-            <span className="brand__mark">25/50</span>
+            <span className="brand__mark">75%</span>
             <span>
               <strong>JSON Frontend</strong>
-              <small>Milestone demo only</small>
+              <small>Integrated milestone frontend</small>
             </span>
           </NavLink>
           <p className="brand-copy">
-            Register, login, browse, top up, and finish checkout with live voucher validation.
+            Register, log in, browse products, check out with vouchers, track wallet history, and operate lifecycle views for buyer, jastiper, and admin roles.
           </p>
         </div>
 
@@ -45,6 +47,16 @@ export default function AppShell() {
               <NavLink className={navigationClassName} to="/orders">
                 Orders
               </NavLink>
+              {isJastiper && (
+                <NavLink className={navigationClassName} to="/jastiper/orders">
+                  Jastiper
+                </NavLink>
+              )}
+              {isAdmin && (
+                <NavLink className={navigationClassName} to="/admin">
+                  Admin
+                </NavLink>
+              )}
             </>
           )}
         </nav>
@@ -53,8 +65,8 @@ export default function AppShell() {
           {isAuthenticated ? (
             <>
               <div className="user-chip">
-                <span>{user.username}</span>
-                <small>{user.email}</small>
+                <span>{user.fullName || user.username}</span>
+                <small>{user.role} | {user.email}</small>
               </div>
               <button className="button button--ghost" onClick={handleLogout} type="button">
                 Log out

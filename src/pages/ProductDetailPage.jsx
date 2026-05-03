@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import LoadingState from '../components/LoadingState';
+import ProductImage from '../components/ProductImage';
 import { api } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/format';
 
@@ -22,7 +23,7 @@ export default function ProductDetailPage() {
       try {
         const data = await api.getProduct(productId);
         if (!cancelled) {
-          setProduct(data.product);
+          setProduct(data);
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -43,7 +44,7 @@ export default function ProductDetailPage() {
   }, [productId]);
 
   if (loading) {
-    return <LoadingState label="Loading product…" />;
+    return <LoadingState label="Loading product..." />;
   }
 
   if (error || !product) {
@@ -54,12 +55,12 @@ export default function ProductDetailPage() {
     <section className="page">
       <article className="detail-layout">
         <div className="detail-media">
-          <img src={product.imageUrl} alt={product.name} />
+          <ProductImage product={product} />
         </div>
 
         <div className="detail-copy">
           <div className="pill-row">
-            <span className="pill">{product.category}</span>
+            <span className="pill">{product.category || product.originLocation || 'Limited drop'}</span>
             <span className={`pill ${product.stock <= 3 ? 'pill--warn' : 'pill--success'}`}>
               Stock {product.stock}
             </span>

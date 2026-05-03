@@ -1,15 +1,16 @@
 import { Link } from 'react-router-dom';
 import { formatCurrency } from '../lib/format';
+import ProductImage from './ProductImage';
 
 export default function ProductCard({ product }) {
   return (
     <article className="product-card">
       <div className="product-card__media">
-        <img src={product.imageUrl} alt={product.name} />
+        <ProductImage product={product} />
       </div>
       <div className="product-card__body">
         <div className="pill-row">
-          <span className="pill">{product.category}</span>
+          <span className="pill">{product.category || product.originLocation || 'Limited drop'}</span>
           <span className={`pill ${product.stock <= 3 ? 'pill--warn' : 'pill--success'}`}>
             Stock {product.stock}
           </span>

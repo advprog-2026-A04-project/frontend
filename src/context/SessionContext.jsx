@@ -31,9 +31,9 @@ export function SessionProvider({ children }) {
       }
 
       try {
-        const data = await api.getSession();
+        const profile = await api.getCurrentUser(token);
         if (!cancelled) {
-          setUser(data.user);
+          setUser(profile);
         }
       } catch {
         if (!cancelled) {
@@ -57,29 +57,32 @@ export function SessionProvider({ children }) {
 
   async function login(credentials) {
     const session = await api.login(credentials);
+    const nextUser = {
+      id: session.id,
+      email: session.email,
+      username: session.username,
+      fullName: session.fullName,
+      role: session.role,
+    };
+
     setToken(session.token);
-    setUser(session.user);
-    persistSession(session.token, session.user);
-    return session;
+    setUser(nextUser);
+    persistSession(session.token, nextUser);
+    return nextUser;
   }
 
   async function register(payload) {
-    return api.register(payload);
+    await api.register(payload);
+    return {
+      message: 'Registration successful. Log in with the account you just created.',
+    };
   }
 
   async function logout() {
-    try {
-      if (token) {
-        await api.logout();
-      }
-    } catch {
-      // Ignore stale server sessions and always clear local state.
-    } finally {
-      setToken('');
-      setUser(null);
-      clearPersistedSession();
-      setReady(true);
-    }
+    setToken('');
+    setUser(null);
+    clearPersistedSession();
+    setReady(true);
   }
 
   return (
