@@ -17,16 +17,16 @@ Google Cloud Run, region `us-central1`
 Frontend:
 
 - URL: `https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app`
-- Revision: `advprog-frontend-m25-m50-00007-kkm`
-- Revision created at: `2026-05-03T17:05:41.030951Z`
-- Commit deployed: `a2653f5` (`Add Selenium milestone 75 tests`)
+- Revision: `advprog-frontend-m25-m50-00008-ggv`
+- Revision created at: `2026-05-03T17:35:51.285211Z`
+- Commit deployed: `05ef30a` (`Improve frontend verification safety`)
 
 Auth/Profile:
 
 - URL: `https://auth-profile-api-osvihgaoya-uc.a.run.app`
-- Revision: `auth-profile-api-00005-c95`
-- Revision created at: `2026-05-03T17:00:48.304592Z`
-- Commit deployed: `5a80c75` (`Make demo account seeding explicit`)
+- Revision: `auth-profile-api-00006-vgr`
+- Revision created at: `2026-05-03T17:37:40.551245Z`
+- Commit deployed: `91fb089` (`Harden demo account seeding`)
 
 Order:
 
@@ -43,7 +43,7 @@ Supporting services used by the deployed frontend:
 
 Verification timestamp recorded locally:
 
-- `2026-05-04T00:09:44.3069963+07:00`
+- `2026-05-04T00:39:58+07:00`
 
 ## Deployment Commands Run
 
@@ -52,7 +52,7 @@ The final deployment pass was run after creating the follow-up commits above so 
 Auth/Profile:
 
 ```bash
-gcloud run deploy auth-profile-api --source . --region us-central1 --allow-unauthenticated --max-instances=1 --update-env-vars APP_DEMO_SEED_ENABLED=true --quiet
+gcloud run deploy auth-profile-api --source . --region us-central1 --allow-unauthenticated --max-instances=1 --update-env-vars APP_DEMO_SEED_ENABLED=true --remove-env-vars APP_DEMO_ACCOUNTS_ENABLED --quiet
 ```
 
 Order:
@@ -174,19 +174,26 @@ Final deployed run:
 
 Final evidence set:
 
-- summary: [verification-artifacts/20260504-000722/summary.json](./verification/selenium-verifier/verification-artifacts/20260504-000722/summary.json)
+- summary: [verification-artifacts/20260504-003951/summary.json](./verification/selenium-verifier/verification-artifacts/20260504-003951/summary.json)
 - html report: [verification-artifacts/live-report-final.html](./verification/selenium-verifier/verification-artifacts/live-report-final.html)
 
-Intermediate failed reruns were kept as raw evidence during selector stabilization and are not the final verdict.
+Intermediate failed reruns were kept as raw evidence during selector stabilization and local-origin tuning and are not the final verdict.
 
 ## Local Selenium Status
 
-At follow-up verification time:
+Final local run:
 
-- frontend local dev server on `5173` was reachable
-- local backend ports `8081` to `8085` were not running
+- status: passed
+- scenarios: `6/6`
+- browser: `chrome` headless
+- frontend URL: `http://localhost:5173`
 
-The local Selenium suite was therefore prepared but not rerun in this follow-up because the local multi-service stack was not live.
+Local evidence set:
+
+- summary: [verification-artifacts/20260504-003250/summary.json](./verification/selenium-verifier/verification-artifacts/20260504-003250/summary.json)
+- html report: [verification-artifacts/local-report-pass.html](./verification/selenium-verifier/verification-artifacts/local-report-pass.html)
+
+One earlier local rerun failed because `127.0.0.1` did not match the default backend CORS origin list. The final local run uses `http://localhost:5173`, which matches the default local service configuration.
 
 ## Concurrency Verification Boundary
 

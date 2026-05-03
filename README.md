@@ -29,6 +29,8 @@ This frontend talks directly to the deployed microservices. Checkout orchestrati
 
 Required runtime: Node `20.19+`
 
+The production Dockerfile already pins `node:20.19-alpine` for both build and runtime stages.
+
 1. Install dependencies:
 
 ```bash
