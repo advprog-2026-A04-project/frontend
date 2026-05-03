@@ -9,12 +9,12 @@ from .base_page import BasePage
 class LoginPage(BasePage):
     def load(self) -> None:
         self.open("/login")
-        self.wait_for_text("Log in to continue")
+        self.wait_for_text("Log in")
 
     def login(self, email: str, password: str) -> None:
         self.fill_css("input[type='email']", email)
         self.fill_css("input[type='password']", password)
-        self.click_xpath("//button[normalize-space()='Log in']")
+        self.click_xpath("//button[contains(normalize-space(), 'Log In')]")
 
     def wait_for_success(self) -> None:
-        self.wait.until(EC.visibility_of_element_located((By.XPATH, "//*[contains(normalize-space(), 'Browse demo-ready products')]")))
+        self.wait.until(EC.visibility_of_element_located((By.XPATH, "//*[contains(normalize-space(), 'Browse the newest limited drops.')]")))

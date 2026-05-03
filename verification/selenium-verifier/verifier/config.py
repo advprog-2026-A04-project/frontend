@@ -96,7 +96,7 @@ def load_settings() -> Settings:
         ),
         buyer_email=_env("BUYER_EMAIL", "demo@json.app"),
         buyer_password=_env("BUYER_PASSWORD", "Demo123!"),
-        jastiper_email=_env("JASTIPER_EMAIL", "jastiper1@json.app"),
+        jastiper_email=_env("JASTIPER_EMAIL", "jastiper3@json.app"),
         jastiper_password=_env("JASTIPER_PASSWORD", "Demo123!"),
         admin_email=_env("ADMIN_EMAIL", "admin@json.app"),
         admin_password=_env("ADMIN_PASSWORD", "Demo123!"),

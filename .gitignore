@@ -15,7 +15,9 @@ dist-ssr
 
 # Environment variables
 .env
+.env.production
 verification/selenium-verifier/.env
+verification/selenium-verifier/evidence/
 .venv/
 .pytest_cache/
 verification-artifacts/
@@ -32,3 +34,9 @@ verification-artifacts/
 *.njsproj
 *.sln
 *.sw?
+
+# Python verification tooling
+__pycache__/
+*.pyc
+.pytest_cache/
+verification-artifacts/

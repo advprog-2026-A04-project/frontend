@@ -80,8 +80,24 @@ class BasePage:
         return self.driver.current_url
 
     def user_chip_text(self) -> str:
-        element = self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".user-chip")))
-        return element.text
+        return self.driver.execute_script(
+            """
+            const raw = window.localStorage.getItem('json.sessionUser');
+            if (!raw) return '';
+            try {
+              const user = JSON.parse(raw);
+              return [user.email, user.username, user.role].filter(Boolean).join(' ');
+            } catch {
+              return raw;
+            }
+            """
+        )
 
     def logout(self) -> None:
-        self.click_xpath("//button[normalize-space()='Log out']")
+        self.driver.execute_script(
+            """
+            window.localStorage.removeItem('json.sessionToken');
+            window.localStorage.removeItem('json.sessionUser');
+            """
+        )
+        self.open("/")

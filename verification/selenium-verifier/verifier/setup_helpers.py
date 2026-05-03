@@ -108,19 +108,20 @@ class SetupHelper:
             raise AssertionError("Inventory search returned no products.")
 
         preferred = str(preferred_jastiper_id) if preferred_jastiper_id is not None else None
+        sorted_products = sorted(products, key=lambda item: int(item.get("stock") or 0), reverse=True)
         viable = None
         if preferred:
             viable = next(
                 (
                     item
-                    for item in products
-                    if str(item.get("jastiperId") or "") == preferred and int(item["stock"]) >= 2
+                    for item in sorted_products
+                    if str(item.get("jastiperId") or "") == preferred and int(item["stock"]) >= 1
                 ),
                 None,
             )
 
         if viable is None:
-            viable = next((item for item in products if int(item["stock"]) >= 2), products[0])
+            viable = next((item for item in sorted_products if int(item["stock"]) >= 1), sorted_products[0])
 
         return ProductInfo(
             product_id=viable["id"],

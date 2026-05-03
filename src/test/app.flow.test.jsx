@@ -58,7 +58,7 @@ describe('frontend milestone flow', () => {
     await user.type(screen.getByLabelText(/password/i), 'Password123!');
     await user.click(screen.getByRole('button', { name: /register/i }));
 
-    expect(await screen.findByRole('heading', { name: /log in to continue/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^log in$/i })).toBeInTheDocument();
     expect(screen.getByDisplayValue('new@json.app')).toBeInTheDocument();
   });
 
@@ -176,23 +176,26 @@ describe('frontend milestone flow', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole('button', { name: /^log in$/i }));
-    expect(await screen.findByRole('heading', { name: /browse demo-ready products/i })).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/email/i), 'demo@json.app');
+    await user.type(screen.getByLabelText(/password/i), 'Password123!');
+    await user.click(screen.getByRole('button', { name: /log in/i }));
+
+    expect(await screen.findByRole('heading', { name: /browse the newest limited drops/i })).toBeInTheDocument();
 
     await user.click(await screen.findByRole('link', { name: /view details/i }));
     expect(await screen.findByRole('heading', { name: product.name })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /buy now/i }));
-    expect(await screen.findByRole('heading', { name: /finish milestone 50% flow/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /checkout now/i }));
+    expect(await screen.findByRole('heading', { name: /complete your order/i })).toBeInTheDocument();
 
     await user.type(screen.getByLabelText(/voucher code/i), 'MILESTONE10');
     expect(await screen.findByText(/code milestone10 is currently active/i)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /create order and pay/i }));
+    await user.click(screen.getByRole('button', { name: /checkout now/i }));
 
-    expect(await screen.findByRole('heading', { name: '1001' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /order created/i })).toBeInTheDocument();
     expect(screen.getByText(/checkout completed successfully and the order is now paid/i)).toBeInTheDocument();
-    expect(screen.getByText(/milestone10/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/milestone10/i).length).toBeGreaterThan(0);
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(

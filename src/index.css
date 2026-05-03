@@ -1,4 +1,96 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Space Grotesk", sans-serif;
+  --color-cyan: #00f0ff;
+  --color-magenta: #d900ff;
+  --color-pink: #ff007f;
+  --color-purple: #7000ff;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-display);
+    background: #0b0914;
+    color: #f8fafc;
+  }
+
+  body,
+  #root {
+    min-height: 100vh;
+    background: #0b0914;
+  }
+
+  .material-symbols-outlined {
+    font-variation-settings:
+      "FILL" 0,
+      "wght" 500,
+      "GRAD" 0,
+      "opsz" 24;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  @keyframes blob-float-1 {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(30px, -50px) scale(1.08);
+    }
+    66% {
+      transform: translate(-22px, 24px) scale(0.92);
+    }
+  }
+
+  @keyframes blob-float-2 {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(-28px, 46px) scale(1.16);
+    }
+    66% {
+      transform: translate(18px, -20px) scale(0.84);
+    }
+  }
+
+  @keyframes blob-float-3 {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(48px, 26px) scale(0.94);
+    }
+    66% {
+      transform: translate(-38px, -36px) scale(1.08);
+    }
+  }
+
+  .animate-blob-1 {
+    animation: blob-float-1 16s infinite ease-in-out;
+  }
+
+  .animate-blob-2 {
+    animation: blob-float-2 19s infinite ease-in-out;
+  }
+
+  .animate-blob-3 {
+    animation: blob-float-3 22s infinite ease-in-out;
+  }
+}
 
 :root {
   color-scheme: dark;

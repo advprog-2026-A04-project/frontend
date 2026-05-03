@@ -9,7 +9,7 @@ from .base_page import BasePage
 class CatalogPage(BasePage):
     def load(self) -> None:
         self.open("/products")
-        self.wait_for_text("Browse demo-ready products")
+        self.wait_for_text("Browse the newest limited drops.")
 
     def product_cards(self):
         return self.wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".product-card")))
@@ -23,7 +23,7 @@ class CatalogPage(BasePage):
                 (
                     By.XPATH,
                     "//article[contains(@class,'product-card')]"
-                    f"[.//h3[contains(normalize-space(), \"{name}\")]]//a[normalize-space()='View details']",
+                    f"[.//h3[contains(normalize-space(), \"{name}\")]]//a[contains(normalize-space(), 'View details')]",
                 )
             )
         )
@@ -32,7 +32,7 @@ class CatalogPage(BasePage):
     def open_first_product(self) -> None:
         link = self.wait.until(
             EC.visibility_of_element_located(
-                (By.XPATH, "(//article[contains(@class,'product-card')]//a[normalize-space()='View details'])[1]")
+                (By.XPATH, "(//article[contains(@class,'product-card')]//a[contains(normalize-space(), 'View details')])[1]")
             )
         )
         self.driver.get(link.get_attribute("href"))

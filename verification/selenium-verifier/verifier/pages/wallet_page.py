@@ -16,7 +16,7 @@ class WalletPage(BasePage):
 
     def top_up(self, amount: int) -> None:
         self.fill_css("input[type='number']", str(amount))
-        self.click_xpath("//button[normalize-space()='Top up wallet']")
+        self.click_xpath("//button[contains(normalize-space(), 'Top Up Wallet')]")
 
     def wait_for_top_up_success(self) -> str:
         element = self.wait.until(

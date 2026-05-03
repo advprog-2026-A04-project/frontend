@@ -36,7 +36,7 @@ Concurrency verification remains in the backend services and in the optional con
 cd verification/selenium-verifier
 python -m venv .venv
 .venv\Scripts\activate
-nvm use
+nvm use 20.19.0
 python -m pip install -r requirements.txt
 copy .env.example .env
 ```
@@ -80,6 +80,7 @@ AUTO_DETECT_FRONTEND_ORIGIN=true
 Notes:
 
 - The demo credentials in `.env.example` are only for the documented local/demo deployment.
+- The default verifier jastiper is `jastiper3@json.app` because the seeded demo inventory keeps the most stable stock on that owner.
 - `VOUCHER_ADMIN_TOKEN` is required for the admin voucher scenario.
 - `INTERNAL_API_TOKEN` is not required for the main Selenium suite. It is only used by the optional concurrency runner.
 - The frontend admin token is entered manually at runtime and should never be committed in a `VITE_` variable.
@@ -111,6 +112,12 @@ For local demo-role testing, start Auth with:
 
 ```env
 APP_DEMO_SEED_ENABLED=true
+```
+
+If the shared local inventory state is already depleted on another owner, optionally pin a seeded product that belongs to the configured jastiper:
+
+```env
+DEFAULT_PRODUCT_ID=55555555-5555-5555-5555-555555555555
 ```
 
 Then run the same `pytest` command.

@@ -40,7 +40,7 @@ def ui_logout_if_needed(pages) -> None:
     token = pages.driver.execute_script("return window.localStorage.getItem('json.sessionToken');")
     if token:
         pages.home.logout()
-        pages.home.wait_for_text("Create account")
+        pages.home.wait_for_text("Create Account")
 
 
 def build_paid_order(settings, services, setup_helper, scenario_artifacts, prefix: str, preferred_jastiper_id: int):
