@@ -5,7 +5,13 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['coverage', 'dist']),
+  globalIgnores([
+    'coverage',
+    'dist',
+    'verification/selenium-verifier/.venv/**',
+    'verification/selenium-verifier/.pytest_cache/**',
+    'verification/selenium-verifier/verification-artifacts/**',
+  ]),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

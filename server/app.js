@@ -59,6 +59,10 @@ export function createApp() {
 
   app.use(express.json());
 
+  app.get('/status', (_request, response) => {
+    response.status(200).send('ok');
+  });
+
   app.get(
     '/api/health',
     asyncRoute(async (_request, response) => {
