@@ -148,17 +148,20 @@ def test_login_catalog_with_configured_buyer(
         assert card_count > 0, "Catalog did not render any product cards."
         scenario_artifacts.save_screenshot("buyer_catalog.png", pages.driver)
 
-        product = services.inventory.search(
-            token,
-            evidence=scenario_artifacts,
-            evidence_name="catalog_products",
-        ).payload[0]
-        pages.catalog.open_product_by_name(product["name"])
+        pages.catalog.open_first_product()
         pages.product_detail.wait_loaded()
         scenario_artifacts.save_screenshot("buyer_product_detail.png", pages.driver)
 
+        product_id = pages.product_detail.product_id()
+        product = services.inventory.get_product(
+            token,
+            product_id,
+            evidence=scenario_artifacts,
+            evidence_name="catalog_product_detail",
+        ).payload
+
         assert pages.product_detail.product_name() == product["name"]
-        assert pages.product_detail.product_id() == product["id"]
+        assert product_id == product["id"]
         assert parse_currency(pages.product_detail.price_text()) == Decimal(str(product["price"]))
         assert settings.buyer_email in pages.catalog.user_chip_text()
 

@@ -18,10 +18,21 @@ class CatalogPage(BasePage):
         return len(self.product_cards())
 
     def open_product_by_name(self, name: str) -> None:
-        self.click_xpath(
-            "//article[contains(@class,'product-card')]"
-            f"[.//h3[contains(normalize-space(), \"{name}\")]]//a[normalize-space()='View details']"
+        link = self.wait.until(
+            EC.visibility_of_element_located(
+                (
+                    By.XPATH,
+                    "//article[contains(@class,'product-card')]"
+                    f"[.//h3[contains(normalize-space(), \"{name}\")]]//a[normalize-space()='View details']",
+                )
+            )
         )
+        self.driver.get(link.get_attribute("href"))
 
     def open_first_product(self) -> None:
-        self.click_xpath("(//article[contains(@class,'product-card')]//a[normalize-space()='View details'])[1]")
+        link = self.wait.until(
+            EC.visibility_of_element_located(
+                (By.XPATH, "(//article[contains(@class,'product-card')]//a[normalize-space()='View details'])[1]")
+            )
+        )
+        self.driver.get(link.get_attribute("href"))

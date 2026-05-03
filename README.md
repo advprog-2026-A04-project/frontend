@@ -27,13 +27,16 @@ This frontend talks directly to the deployed microservices. Checkout orchestrati
 
 ## Local Setup
 
-Recommended runtime: Node `20.19+`
+Required runtime: Node `20.19+`
 
 1. Install dependencies:
 
 ```bash
+nvm use
 npm install
 ```
+
+If `nvm` is installed, the repo pin is in `.nvmrc` and resolves to `20.19.0`.
 
 2. Copy env values:
 
@@ -66,7 +69,7 @@ Local backend defaults expected by the Vite client:
 - order: `http://localhost:8084`
 - voucher: `http://localhost:8085`
 
-If local demo accounts are needed, the Auth service must be started with `APP_DEMO_ACCOUNTS_ENABLED=true`.
+If local demo accounts are needed, the Auth service must be started with `APP_DEMO_SEED_ENABLED=true` or the `demo` Spring profile.
 
 ## Environment Variables
 
@@ -77,15 +80,15 @@ Build-time Vite variables:
 - `VITE_WALLET_BASE_URL`
 - `VITE_ORDER_BASE_URL`
 - `VITE_VOUCHER_BASE_URL`
-- `VITE_VOUCHER_ADMIN_TOKEN` optional demo-only convenience default for the admin page
 
 Runtime server variables:
 
 - `PORT`
 - `VOUCHER_BASE_URL`
 - `DEMO_VOUCHER_CODE`
+- `VOUCHER_ADMIN_TOKEN` optional and server-only for the legacy voucher bootstrap path
 
-Do not put private admin tokens or service secrets into the frontend build.
+Do not put private admin tokens or service secrets into the frontend build. For the admin page, paste the voucher admin token manually at runtime or set a server-only variable for local legacy bootstrap use.
 
 ## Commands
 
@@ -136,6 +139,6 @@ Deployment and verification notes are tracked in:
 
 ## Risks
 
-- `VITE_VOUCHER_ADMIN_TOKEN` should only be used for local or public demo environments.
+- Voucher admin tokens must stay out of `VITE_` variables and committed frontend env files.
 - The frontend assumes backend CORS allows the deployed frontend origin.
 - The Express runtime still contains the old demo-only `/api/*` handlers, but the Milestone 75 UI uses the direct service client in `src/lib/api.js`.

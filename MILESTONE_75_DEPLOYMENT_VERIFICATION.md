@@ -52,7 +52,7 @@ The final deployment pass was run after creating the follow-up commits above so 
 Auth/Profile:
 
 ```bash
-gcloud run deploy auth-profile-api --source . --region us-central1 --allow-unauthenticated --max-instances=1 --update-env-vars APP_DEMO_ACCOUNTS_ENABLED=true --quiet
+gcloud run deploy auth-profile-api --source . --region us-central1 --allow-unauthenticated --max-instances=1 --update-env-vars APP_DEMO_SEED_ENABLED=true --quiet
 ```
 
 Order:
@@ -77,19 +77,19 @@ The deployed frontend build uses the direct-service Vite variables from `.env.pr
 - `VITE_ORDER_BASE_URL`
 - `VITE_VOUCHER_BASE_URL`
 
-The frontend build does not embed the voucher admin token.
+The frontend build does not embed the voucher admin token. The admin UI now requires manual token entry at runtime and masks the field to avoid exposing the token in screenshots.
 
 ## Auth Demo Account Safety
 
-`APP_DEMO_ACCOUNTS_ENABLED` now defaults to `false` in code.
+`APP_DEMO_SEED_ENABLED` now defaults to `false` in code.
 
 For the public milestone demo deployment, Cloud Run was explicitly updated with:
 
 ```env
-APP_DEMO_ACCOUNTS_ENABLED=true
+APP_DEMO_SEED_ENABLED=true
 ```
 
-This keeps seeded buyer/jastiper/admin demo accounts available for the deployed milestone demo while avoiding silent seeding in production-like environments by default.
+This keeps seeded buyer/jastiper/admin demo accounts available for the deployed milestone demo while avoiding silent seeding in production-like environments by default. Legacy compatibility with `APP_DEMO_ACCOUNTS_ENABLED` is still supported, but new deployments should use `APP_DEMO_SEED_ENABLED`.
 
 ## Test and Build Commands
 
@@ -198,7 +198,8 @@ Those destructive concurrency checks were not run against the shared Cloud Run d
 
 - `VOUCHER_ADMIN_TOKEN` is required for the admin voucher scenario.
 - The token value used for deployed verification was read from Cloud Run configuration locally and was not committed into source control.
-- Demo-role accounts require `APP_DEMO_ACCOUNTS_ENABLED=true` in Auth when running a local demo stack.
+- The frontend no longer supports a `VITE_` voucher admin token path. Token entry is runtime-only.
+- Demo-role accounts require `APP_DEMO_SEED_ENABLED=true` or the `demo` Spring profile in Auth when running a local demo stack.
 
 ## Evidence Notes
 

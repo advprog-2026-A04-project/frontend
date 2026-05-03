@@ -36,6 +36,7 @@ Concurrency verification remains in the backend services and in the optional con
 cd verification/selenium-verifier
 python -m venv .venv
 .venv\Scripts\activate
+nvm use
 python -m pip install -r requirements.txt
 copy .env.example .env
 ```
@@ -81,6 +82,7 @@ Notes:
 - The demo credentials in `.env.example` are only for the documented local/demo deployment.
 - `VOUCHER_ADMIN_TOKEN` is required for the admin voucher scenario.
 - `INTERNAL_API_TOKEN` is not required for the main Selenium suite. It is only used by the optional concurrency runner.
+- The frontend admin token is entered manually at runtime and should never be committed in a `VITE_` variable.
 
 ## Run Against Deployment
 
@@ -103,13 +105,38 @@ ORDER_BASE_URL=http://localhost:8084
 VOUCHER_BASE_URL=http://localhost:8085
 ```
 
+If you prefer `127.0.0.1`, configure every backend service with `APP_CORS_ALLOWED_ORIGINS=http://127.0.0.1:5173,http://localhost:5173`.
+
 For local demo-role testing, start Auth with:
 
 ```env
-APP_DEMO_ACCOUNTS_ENABLED=true
+APP_DEMO_SEED_ENABLED=true
 ```
 
 Then run the same `pytest` command.
+
+Recommended local start commands:
+
+```powershell
+# Auth/Profile
+$env:PORT='8081'; $env:APP_DEMO_SEED_ENABLED='true'; .\gradlew.bat bootRun
+
+# Inventory
+$env:PORT='8082'; .\gradlew.bat bootRun
+
+# Wallet
+$env:PORT='8083'; .\gradlew.bat bootRun
+
+# Order (run from services/Order/backend)
+$env:PORT='8084'; $env:APP_CORS_ALLOWED_ORIGINS='http://localhost:5173,http://127.0.0.1:5173'; .\gradlew.bat bootRun
+
+# Voucher-Promo
+$env:PORT='8085'; $env:SPRING_PROFILES_ACTIVE='cloudrun'; $env:ADMIN_TOKEN='<local-demo-admin-token>'; .\gradlew.bat bootRun
+
+# Frontend
+nvm use
+npm run dev -- --host 127.0.0.1 --port 5173
+```
 
 ## Evidence
 
@@ -135,3 +162,21 @@ python scripts/run_concurrency.py
 ```
 
 It needs `INTERNAL_API_TOKEN`, and voucher concurrency also needs `VOUCHER_ADMIN_TOKEN`.
+
+Backend concurrency suites that are safe to run locally or in staging:
+
+```powershell
+# Inventory
+cd services/Inventory
+.\gradlew.bat test --tests "*ProductServiceConcurrencyTest"
+
+# Wallet
+cd services/Wallet
+.\gradlew.bat test --tests "*WalletDeductConcurrencyTest" --tests "*WalletServiceImplTest"
+
+# Voucher
+cd services/Voucher-Promo
+.\gradlew.bat test --tests "*VoucherClaimConcurrencyTest" --tests "*VoucherClaimIdempotencyTest"
+```
+
+Do not run those destructive concurrency checks against the shared Cloud Run demo.

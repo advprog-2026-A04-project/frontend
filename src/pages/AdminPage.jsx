@@ -21,7 +21,7 @@ function toLocalDateTimeInput(offsetDays = 0) {
 }
 
 export default function AdminPage() {
-  const [adminToken, setAdminToken] = useState(import.meta.env.VITE_VOUCHER_ADMIN_TOKEN || '');
+  const [adminToken, setAdminToken] = useState('');
   const [orders, setOrders] = useState([]);
   const [vouchers, setVouchers] = useState([]);
   const [voucherForm, setVoucherForm] = useState({
@@ -167,9 +167,11 @@ export default function AdminPage() {
             <span>Voucher admin token</span>
             <input
               className="input"
+              autoComplete="off"
+              type="password"
               value={adminToken}
               onChange={(event) => setAdminToken(event.target.value)}
-              placeholder="Required for create, edit, disable, and admin list"
+              placeholder="Paste a local or deployment admin token manually"
             />
           </label>
           <button className="button button--secondary" onClick={loadAdminData} type="button">

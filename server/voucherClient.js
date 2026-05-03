@@ -1,8 +1,8 @@
 const baseUrl =
   process.env.VOUCHER_BASE_URL ||
-  'https://voucher-promo-api-383620816191.us-central1.run.app';
+  'https://voucher-promo-api-osvihgaoya-uc.a.run.app';
 
-const adminToken = process.env.VOUCHER_ADMIN_TOKEN || 'dev-admin-token';
+const adminToken = process.env.VOUCHER_ADMIN_TOKEN || '';
 const demoVoucherCode = process.env.DEMO_VOUCHER_CODE || 'MILESTONE10';
 
 let bootstrapPromise = null;
@@ -85,6 +85,10 @@ export async function fetchVoucherHealth() {
 export async function ensureDemoVoucher() {
   if (bootstrapPromise) {
     return bootstrapPromise;
+  }
+
+  if (!adminToken) {
+    return null;
   }
 
   bootstrapPromise = (async () => {

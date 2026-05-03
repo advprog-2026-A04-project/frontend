@@ -10,7 +10,7 @@ from .base_page import BasePage
 
 class ProductDetailPage(BasePage):
     def wait_loaded(self) -> None:
-        self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".detail-media img")))
+        self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".detail-layout")))
         self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".detail-copy h1")))
 
     def product_name(self) -> str:
