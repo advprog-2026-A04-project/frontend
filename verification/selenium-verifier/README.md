@@ -18,12 +18,18 @@ Current live suite scenarios:
 
 - `health_and_environment_sanity`
 - `login_catalog_with_configured_buyer`
+- `invalid_login_and_logout_clears_session`
 - `milestone25_register_login_browse_profile_and_alias_routes`
 - `route_guards_search_filters_and_role_navigation`
+- `unauthorized_role_actions_are_rejected`
 - `checkout_wallet_history_and_order_views`
+- `checkout_rejects_insufficient_wallet_balance_without_side_effects`
+- `checkout_double_submit_creates_single_order_and_payment`
 - `invalid_voucher_rejection_and_public_voucher_ui`
+- `admin_voucher_rejects_missing_or_invalid_admin_token`
 - `order_lifecycle_invalid_transition_and_rating`
 - `admin_order_monitoring_and_checkout_visibility`
+- `expired_and_quota_exhausted_vouchers_are_rejected_or_hidden`
 - `cancel_refund_is_idempotent`
 - `admin_voucher_management_and_public_visibility`
 
@@ -33,12 +39,15 @@ Milestone coverage:
   - landing page loads
   - register via UI
   - login via UI
+  - invalid login rejection and session cleanup
   - product list and detail
   - protected route redirect to login
   - buyer profile navigation
 - `50%`
   - wallet top-up and balance visibility
   - voucher-aware checkout
+  - insufficient-wallet checkout rejection without balance or stock side effects
+  - checkout submit-guard coverage for duplicate-click prevention
   - invalid voucher rejection in the checkout UI and backend
   - order creation to `PAID`
   - wallet history reflects `TOPUP` and `PAYMENT`
@@ -46,10 +55,12 @@ Milestone coverage:
   - buyer order history and active order queue
   - jastiper queue and valid lifecycle transitions
   - invalid transition rejection
+  - unauthorized buyer and jastiper role protection
   - rating after `COMPLETED`
   - cancel and idempotent refund
   - admin order monitoring
   - admin voucher create, edit, disable
+  - expired and quota-exhausted voucher rejection and public-list behavior
   - disabled voucher removed from the public checkout list
   - wallet refund visibility
 
@@ -59,6 +70,7 @@ Additional current-UI coverage:
 - catalog search interaction
 - role-aware profile cards for buyer, jastiper, and admin
 - runtime admin-token entry path for voucher management
+- session persistence across refresh and logout cleanup
 
 Concurrency verification remains in the backend services and in the optional concurrency runner here. Do not run destructive concurrency checks against shared demo deployments unless you intend to mutate shared data.
 
@@ -113,17 +125,57 @@ Notes:
 
 - The demo credentials in `.env.example` are only for the documented local/demo deployment.
 - The default verifier jastiper is `jastiper3@json.app` because the seeded demo inventory keeps the most stable stock on that owner.
-- `VOUCHER_ADMIN_TOKEN` is required for the admin voucher scenario.
+- `VOUCHER_ADMIN_TOKEN` is required for:
+  - `admin_order_monitoring_and_checkout_visibility`
+  - `expired_and_quota_exhausted_vouchers_are_rejected_or_hidden`
+  - `admin_voucher_management_and_public_visibility`
+- `admin_voucher_rejects_missing_or_invalid_admin_token` does not require the real token. It exercises the negative case only.
 - `INTERNAL_API_TOKEN` is not required for the main Selenium suite. It is only used by the optional concurrency runner.
 - The frontend admin token is entered manually at runtime and should never be committed in a `VITE_` variable.
 
-## Run Against Deployment
+## Run Commands
+
+Run the full live suite:
 
 ```bash
 cd verification/selenium-verifier
 .venv\Scripts\activate
 pytest tests/test_live_verification.py -m live -s --html=verification-artifacts\live-report.html --self-contained-html
 ```
+
+Run only smoke coverage:
+
+```bash
+pytest tests/test_live_verification.py -m smoke -s
+```
+
+Run the core suite without edge-case scenarios:
+
+```bash
+pytest tests/test_live_verification.py -m "live and not edge" -s
+```
+
+Run only edge cases:
+
+```bash
+pytest tests/test_live_verification.py -m "live and edge" -s
+```
+
+Run admin-focused coverage:
+
+```bash
+pytest tests/test_live_verification.py -m "live and admin" -s
+```
+
+Run one scenario directly:
+
+```bash
+pytest tests/test_live_verification.py::test_invalid_login_and_logout_clears_session -s
+```
+
+## Run Against Deployment
+
+Use deployed base URLs in `.env`, then run the full live suite or a marker slice from the commands above.
 
 ## Run Against Local Stack
 
@@ -152,7 +204,23 @@ If the shared local inventory state is already depleted on another owner, option
 DEFAULT_PRODUCT_ID=55555555-5555-5555-5555-555555555555
 ```
 
-Then run the same `pytest` command.
+Then run the same `pytest` command or any marker slice from the commands above.
+
+If repeated local runs drain every seeded product to zero stock, stop the local Java services and clear the local H2 files before starting them again:
+
+```powershell
+Remove-Item C:\tmp\auth-profile-db* -Force
+Remove-Item C:\tmp\inventory-db* -Force
+Remove-Item C:\tmp\order-db* -Force
+Remove-Item C:\tmp\wallet-db* -Force
+```
+
+If Voucher-Promo has just restarted, wait until both of these succeed before running the Selenium suite:
+
+```powershell
+Invoke-RestMethod http://localhost:8085/health
+Invoke-RestMethod http://localhost:8085/vouchers/active
+```
 
 Recommended local start commands:
 
