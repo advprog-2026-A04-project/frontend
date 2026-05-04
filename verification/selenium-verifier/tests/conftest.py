@@ -9,6 +9,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from verifier.browser import build_driver
 from verifier.config import load_settings
 from verifier.evidence import ArtifactManager
+from verifier.pause import PauseController
 from verifier.pages import (
     AdminPage,
     CatalogPage,
@@ -57,6 +58,11 @@ def setup_helper(settings, services):
     return SetupHelper(settings, services)
 
 
+@pytest.fixture(scope="session")
+def pause_controller(settings):
+    return PauseController(settings.pause_on_enter)
+
+
 @pytest.fixture()
 def browser(settings, request) -> Generator[tuple, None, None]:
     driver = build_driver(settings)
@@ -81,21 +87,21 @@ def browser(settings, request) -> Generator[tuple, None, None]:
 
 
 @pytest.fixture()
-def pages(browser, settings):
+def pages(browser, settings, pause_controller):
     driver, wait = browser
     return SimpleNamespace(
-        home=HomePage(driver, wait, settings.frontend_base_url),
-        register=RegisterPage(driver, wait, settings.frontend_base_url),
-        login=LoginPage(driver, wait, settings.frontend_base_url),
-        catalog=CatalogPage(driver, wait, settings.frontend_base_url),
-        product_detail=ProductDetailPage(driver, wait, settings.frontend_base_url),
-        wallet=WalletPage(driver, wait, settings.frontend_base_url),
-        checkout=CheckoutPage(driver, wait, settings.frontend_base_url),
-        result=ResultPage(driver, wait, settings.frontend_base_url),
-        orders=OrdersPage(driver, wait, settings.frontend_base_url),
-        profile=ProfilePage(driver, wait, settings.frontend_base_url),
-        jastiper=JastiperOrdersPage(driver, wait, settings.frontend_base_url),
-        admin=AdminPage(driver, wait, settings.frontend_base_url),
+        home=HomePage(driver, wait, settings.frontend_base_url, pause_controller),
+        register=RegisterPage(driver, wait, settings.frontend_base_url, pause_controller),
+        login=LoginPage(driver, wait, settings.frontend_base_url, pause_controller),
+        catalog=CatalogPage(driver, wait, settings.frontend_base_url, pause_controller),
+        product_detail=ProductDetailPage(driver, wait, settings.frontend_base_url, pause_controller),
+        wallet=WalletPage(driver, wait, settings.frontend_base_url, pause_controller),
+        checkout=CheckoutPage(driver, wait, settings.frontend_base_url, pause_controller),
+        result=ResultPage(driver, wait, settings.frontend_base_url, pause_controller),
+        orders=OrdersPage(driver, wait, settings.frontend_base_url, pause_controller),
+        profile=ProfilePage(driver, wait, settings.frontend_base_url, pause_controller),
+        jastiper=JastiperOrdersPage(driver, wait, settings.frontend_base_url, pause_controller),
+        admin=AdminPage(driver, wait, settings.frontend_base_url, pause_controller),
         driver=driver,
         wait=wait,
     )

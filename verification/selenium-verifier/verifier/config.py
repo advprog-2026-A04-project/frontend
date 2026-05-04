@@ -48,6 +48,7 @@ class Settings:
     internal_api_token: str | None
     browser: str
     headless: bool
+    pause_on_enter: bool
     pause_after_scenario: bool
     pause_on_failure: bool
     default_topup_amount: int
@@ -106,6 +107,7 @@ def load_settings() -> Settings:
         internal_api_token=_env("INTERNAL_API_TOKEN"),
         browser=_env("BROWSER", "edge"),
         headless=_env_bool("HEADLESS", False),
+        pause_on_enter=_env_bool("PAUSE_ON_ENTER", False),
         pause_after_scenario=_env_bool("PAUSE_AFTER_SCENARIO", False),
         pause_on_failure=_env_bool("PAUSE_ON_FAILURE", False),
         default_topup_amount=_env_int("DEFAULT_TOPUP_AMOUNT", 1_000_000),

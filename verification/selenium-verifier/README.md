@@ -110,6 +110,7 @@ Optional:
 ```env
 HEADLESS=true
 BROWSER=edge
+PAUSE_ON_ENTER=false
 PAUSE_AFTER_SCENARIO=false
 PAUSE_ON_FAILURE=false
 DEFAULT_TOPUP_AMOUNT=1000000
@@ -136,6 +137,7 @@ Notes:
 - The frontend admin token is entered manually at runtime and should never be committed in a `VITE_` variable.
 - `PAUSE_AFTER_SCENARIO=true` keeps the browser open after each browser-driven test until you press Enter.
 - `PAUSE_ON_FAILURE=true` only pauses when a browser-driven test fails.
+- `PAUSE_ON_ENTER=true` lets you press Enter in the terminal during a run and pause at the next Selenium page action.
 - Use `HEADLESS=false` when you actually want to watch the browser during a pause.
 
 ## Run Commands
@@ -193,6 +195,21 @@ $env:PAUSE_ON_FAILURE='true'
 $env:HEADLESS='false'
 pytest tests/test_live_verification.py -m live -s
 ```
+
+Pause on demand when you press Enter in the terminal:
+
+```powershell
+$env:PAUSE_ON_ENTER='true'
+$env:HEADLESS='false'
+pytest tests/test_live_verification.py -m smoke -s
+```
+
+Behavior:
+
+- press Enter once while the suite is running
+- the verifier pauses at the next Selenium page action or wait helper
+- press Enter again to resume
+- this needs an interactive terminal; it will not work in a non-interactive piped run
 
 ## Run Against Deployment
 
