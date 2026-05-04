@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 from decimal import Decimal
+from urllib.parse import urlparse
 
 import pytest
 
@@ -41,6 +42,10 @@ def ui_logout_if_needed(pages) -> None:
     if token:
         pages.home.logout()
         pages.home.wait_for_text("Create Account")
+
+
+def wait_for_path(pages, expected_path: str) -> None:
+    pages.wait.until(lambda _driver: urlparse(pages.driver.current_url).path == expected_path)
 
 
 def build_paid_order(settings, services, setup_helper, scenario_artifacts, prefix: str, preferred_jastiper_id: int):
@@ -170,6 +175,164 @@ def test_login_catalog_with_configured_buyer(
                 "buyer_profile": session["profile"],
                 "catalog_card_count": card_count,
                 "product_id": product["id"],
+            }
+        )
+        scenario_artifacts.write_json("details.json", details)
+        artifact_manager.record_scenario(scenario, VERIFIED, details)
+    except Exception as error:  # noqa: BLE001
+        scenario_artifacts.save_screenshot("failure.png", pages.driver)
+        details["error"] = str(error)
+        scenario_artifacts.write_json("failure.json", details)
+        artifact_manager.record_scenario(scenario, FAILED, details)
+        raise
+
+
+@pytest.mark.live
+def test_milestone25_register_login_browse_profile_and_alias_routes(
+    setup_helper,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "milestone25_register_login_browse_profile_and_alias_routes"
+    details = {}
+
+    try:
+        ui_logout_if_needed(pages)
+        pages.home.load()
+        scenario_artifacts.save_screenshot("landing_home.png", pages.driver)
+
+        service_health_cards = pages.home.service_health_count()
+        featured_cards = pages.home.featured_card_count()
+        assert service_health_cards >= 4, "Expected the landing page health section to render service cards."
+
+        buyer = setup_helper.new_user("ui-register")
+        pages.home.start_register()
+        pages.register.register(buyer.email, buyer.username, buyer.password)
+        wait_for_path(pages, "/login")
+        assert "Registration successful" in pages.login.flash_text()
+        assert pages.login.email_value() == buyer.email
+        scenario_artifacts.save_screenshot("register_redirect_login.png", pages.driver)
+
+        pages.login.login(buyer.email, buyer.password)
+        pages.login.wait_for_success()
+        session_profile = browser_user(pages.driver)
+        assert session_profile is not None
+        assert session_profile["email"] == buyer.email
+        assert pages.catalog.card_count() > 0
+
+        pages.catalog.open_first_product()
+        pages.product_detail.wait_loaded()
+        scenario_artifacts.save_screenshot("registered_buyer_product_detail.png", pages.driver)
+        detail_path = urlparse(pages.driver.current_url).path
+        assert detail_path.startswith("/product/") or detail_path.startswith("/products/")
+
+        pages.profile.load()
+        assert pages.profile.role_badge_text() == session_profile["role"]
+        assert pages.profile.has_card("Wallet")
+        assert pages.profile.has_card("Orders")
+        assert not pages.profile.has_card("Jastiper Queue")
+        assert not pages.profile.has_card("Admin Console")
+        scenario_artifacts.save_screenshot("buyer_profile.png", pages.driver)
+
+        pages.catalog.load_browse()
+        browse_count = pages.catalog.card_count()
+        assert browse_count > 0
+        pages.catalog.load()
+        products_count = pages.catalog.card_count()
+        assert products_count > 0
+
+        details.update(
+            {
+                "buyer_email": buyer.email,
+                "buyer_role": session_profile["role"],
+                "landing_service_health_cards": service_health_cards,
+                "landing_featured_cards": featured_cards,
+                "browse_count": browse_count,
+                "products_count": products_count,
+                "detail_path": detail_path,
+            }
+        )
+        scenario_artifacts.write_json("details.json", details)
+        artifact_manager.record_scenario(scenario, VERIFIED, details)
+    except Exception as error:  # noqa: BLE001
+        scenario_artifacts.save_screenshot("failure.png", pages.driver)
+        details["error"] = str(error)
+        scenario_artifacts.write_json("failure.json", details)
+        artifact_manager.record_scenario(scenario, FAILED, details)
+        raise
+
+
+@pytest.mark.live
+def test_route_guards_search_filters_and_role_navigation(
+    settings,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "route_guards_search_filters_and_role_navigation"
+    details = {}
+
+    try:
+        ui_logout_if_needed(pages)
+        pages.driver.get(f"{settings.frontend_base_url.rstrip('/')}/wallet")
+        pages.login.wait_for_text("Log in to continue.")
+        wait_for_path(pages, "/login")
+        scenario_artifacts.save_screenshot("protected_wallet_redirect.png", pages.driver)
+
+        pages.login.login(settings.buyer_email, settings.buyer_password)
+        pages.wallet.wait_for_text("Add balance instantly")
+        wait_for_path(pages, "/wallet")
+        scenario_artifacts.save_screenshot("wallet_after_guarded_login.png", pages.driver)
+
+        buyer_profile = browser_user(pages.driver)
+        assert buyer_profile is not None
+        pages.profile.load()
+        assert pages.profile.role_badge_text() == buyer_profile["role"]
+        assert pages.profile.has_card("Wallet")
+        assert pages.profile.has_card("Orders")
+        assert not pages.profile.has_card("Jastiper Queue")
+        assert not pages.profile.has_card("Admin Console")
+
+        pages.driver.get(f"{settings.frontend_base_url.rstrip('/')}/admin")
+        pages.home.wait_for_text("Secure hype drops through the newer JSON storefront.")
+        wait_for_path(pages, "/")
+
+        pages.catalog.load_browse()
+        names_before = pages.catalog.visible_product_names()
+        assert names_before, "Expected catalog names before search."
+        query = names_before[0].split()[0]
+        pages.catalog.search(query)
+        pages.wait.until(
+            lambda _driver: all(query.lower() in name.lower() for name in pages.catalog.visible_product_names())
+        )
+        names_after_search = pages.catalog.visible_product_names()
+        assert names_after_search
+        categories = [label for label in pages.catalog.category_labels() if label != "All"]
+        selected_category = None
+        if categories:
+            selected_category = categories[0]
+        scenario_artifacts.save_screenshot("catalog_search_and_filter.png", pages.driver)
+
+        ui_logout_if_needed(pages)
+        ui_login(pages, settings.jastiper_email, settings.jastiper_password, scenario_artifacts, "jastiper_nav")
+        pages.profile.load()
+        assert pages.profile.has_card("Jastiper Queue")
+        assert not pages.profile.has_card("Admin Console")
+
+        ui_logout_if_needed(pages)
+        ui_login(pages, settings.admin_email, settings.admin_password, scenario_artifacts, "admin_nav")
+        pages.profile.load()
+        assert pages.profile.has_card("Jastiper Queue")
+        assert pages.profile.has_card("Admin Console")
+        scenario_artifacts.save_screenshot("admin_profile_cards.png", pages.driver)
+
+        details.update(
+            {
+                "buyer_role": buyer_profile["role"],
+                "search_query": query,
+                "search_results": names_after_search,
+                "selected_category": selected_category,
             }
         )
         scenario_artifacts.write_json("details.json", details)
@@ -318,6 +481,103 @@ def test_checkout_wallet_history_and_order_views(
 
 
 @pytest.mark.live
+def test_invalid_voucher_rejection_and_public_voucher_ui(
+    settings,
+    services,
+    setup_helper,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "invalid_voucher_rejection_and_public_voucher_ui"
+    details = {}
+
+    try:
+        buyer = setup_helper.register_user_api(
+            setup_helper.new_user("invalid-voucher"),
+            evidence=scenario_artifacts,
+            evidence_name="buyer_register",
+        )
+        product = setup_helper.choose_product(
+            buyer.token,
+            evidence=scenario_artifacts,
+            evidence_name="product_choice",
+        )
+        voucher = setup_helper.ensure_voucher(
+            product.price,
+            evidence=scenario_artifacts,
+            evidence_name="ensure_voucher",
+            force_create=bool(settings.voucher_admin_token),
+        )
+        expected = setup_helper.expected_total(product.price, voucher, evidence=scenario_artifacts)
+        setup_helper.top_up_to_balance(
+            buyer,
+            expected["total_paid"] + Decimal("30000"),
+            evidence=scenario_artifacts,
+            prefix="wallet_topup",
+        )
+
+        ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "invalid_voucher_buyer")
+        orders_before = services.order.list_my(
+            buyer.token,
+            evidence=scenario_artifacts,
+            evidence_name="orders_before_invalid_submit",
+        ).payload["data"]
+
+        pages.catalog.load_browse()
+        pages.catalog.open_product_by_name(product.name)
+        pages.product_detail.wait_loaded()
+        pages.product_detail.click_buy_now()
+        pages.checkout.wait_loaded()
+
+        assert pages.checkout.has_public_voucher(voucher.code)
+        pages.checkout.set_shipping_address(settings.shipping_address)
+        pages.checkout.set_voucher_code("INVALID-CODE")
+        assert "not in the active voucher list" in pages.checkout.voucher_banner_text().lower()
+        scenario_artifacts.save_screenshot("invalid_voucher_banner.png", pages.driver)
+
+        pages.checkout.submit()
+        error_text = pages.checkout.error_text().lower()
+        assert any(fragment in error_text for fragment in ["voucher", "invalid", "inactive", "not found"])
+
+        orders_after_invalid = services.order.list_my(
+            buyer.token,
+            evidence=scenario_artifacts,
+            evidence_name="orders_after_invalid_submit",
+        ).payload["data"]
+        assert len(orders_after_invalid) == len(orders_before)
+
+        pages.checkout.set_voucher_code(voucher.code)
+        assert "currently active" in pages.checkout.voucher_banner_text().lower()
+        scenario_artifacts.save_screenshot("valid_voucher_banner.png", pages.driver)
+        pages.checkout.submit()
+        pages.result.wait_loaded()
+        order_id = pages.result.order_id()
+        assert order_id > 0
+        scenario_artifacts.save_screenshot("valid_checkout_after_invalid_attempt.png", pages.driver)
+
+        details.update(
+            {
+                "buyer_id": buyer.user_id,
+                "product_id": product.product_id,
+                "voucher_code": voucher.code,
+                "order_id": order_id,
+                "invalid_error": error_text,
+                "orders_before": len(orders_before),
+                "orders_after_invalid": len(orders_after_invalid),
+            }
+        )
+        scenario_artifacts.write_json("details.json", details)
+        artifact_manager.record_scenario(scenario, VERIFIED, details)
+    except Exception as error:  # noqa: BLE001
+        scenario_artifacts.save_screenshot("failure.png", pages.driver)
+        details["error"] = str(error)
+        scenario_artifacts.write_json("failure.json", details)
+        artifact_manager.record_scenario(scenario, FAILED, details)
+        raise
+
+
+@pytest.mark.live
 def test_order_lifecycle_invalid_transition_and_rating(
     settings,
     services,
@@ -408,6 +668,107 @@ def test_order_lifecycle_invalid_transition_and_rating(
                 "order_id": order_id,
                 "invalid_transition": invalid_transition.payload,
                 "rated_order_detail": rated_detail,
+            }
+        )
+        scenario_artifacts.write_json("details.json", details)
+        artifact_manager.record_scenario(scenario, VERIFIED, details)
+    except Exception as error:  # noqa: BLE001
+        scenario_artifacts.save_screenshot("failure.png", pages.driver)
+        details["error"] = str(error)
+        scenario_artifacts.write_json("failure.json", details)
+        artifact_manager.record_scenario(scenario, FAILED, details)
+        raise
+
+
+@pytest.mark.live
+def test_admin_order_monitoring_and_checkout_visibility(
+    settings,
+    services,
+    setup_helper,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "admin_order_monitoring_and_checkout_visibility"
+    details = {}
+
+    try:
+        if not settings.voucher_admin_token:
+            raise AssertionError("VOUCHER_ADMIN_TOKEN is required for admin UI coverage.")
+
+        jastiper = setup_helper.login_existing_user_api(
+            settings.jastiper_email,
+            settings.jastiper_password,
+            evidence=scenario_artifacts,
+            evidence_name="jastiper_login_api",
+        )
+        buyer, product, _voucher, _expected, order_payload = build_paid_order(
+            settings,
+            services,
+            setup_helper,
+            scenario_artifacts,
+            "admin-monitor",
+            jastiper.user_id,
+        )
+        order_id = int(order_payload["id"])
+
+        admin = setup_helper.login_existing_user_api(
+            settings.admin_email,
+            settings.admin_password,
+            evidence=scenario_artifacts,
+            evidence_name="admin_login_api",
+        )
+        ui_login(pages, admin.email, settings.admin_password, scenario_artifacts, "admin_monitoring")
+        pages.admin.load()
+        pages.admin.set_admin_token(settings.voucher_admin_token)
+        pages.wait.until(lambda _driver: pages.admin.order_card_count() > 0)
+        pages.wait.until(lambda _driver: pages.admin.has_order(order_id))
+        assert pages.admin.order_card_count() > 0
+        assert pages.admin.has_order(order_id)
+        pages.admin.open_order(order_id)
+        pages.result.wait_loaded()
+        assert pages.result.order_id() == order_id
+        scenario_artifacts.save_screenshot("admin_open_order_detail.png", pages.driver)
+
+        pages.admin.load()
+        pages.admin.set_admin_token(settings.voucher_admin_token)
+        code = f"UIPUB{datetime.utcnow().strftime('%H%M%S%f')}"
+        pages.admin.fill_voucher_form(code=code, discount_value=25000, quota_total=9)
+        pages.admin.submit_form(editing=False)
+        pages.admin.wait_for_voucher(code)
+        scenario_artifacts.save_screenshot("admin_public_voucher_created.png", pages.driver)
+
+        ui_logout_if_needed(pages)
+        ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "buyer_public_voucher")
+        pages.checkout.open(f"/checkout?productId={product.product_id}&qty=1")
+        pages.checkout.wait_loaded()
+        assert pages.checkout.has_public_voucher(code)
+        scenario_artifacts.save_screenshot("checkout_public_voucher_visible.png", pages.driver)
+
+        ui_logout_if_needed(pages)
+        ui_login(pages, admin.email, settings.admin_password, scenario_artifacts, "admin_disable_public_voucher")
+        pages.admin.load()
+        pages.admin.set_admin_token(settings.voucher_admin_token)
+        pages.admin.disable_voucher(code)
+        pages.admin.wait_for_voucher_status(code, "INACTIVE")
+        scenario_artifacts.save_screenshot("admin_public_voucher_disabled.png", pages.driver)
+
+        ui_logout_if_needed(pages)
+        ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "buyer_hidden_voucher")
+        pages.checkout.open(f"/checkout?productId={product.product_id}&qty=1")
+        pages.checkout.wait_loaded()
+        assert not pages.checkout.has_public_voucher(code)
+        pages.checkout.set_voucher_code(code)
+        assert "not in the active voucher list" in pages.checkout.voucher_banner_text().lower()
+        scenario_artifacts.save_screenshot("checkout_public_voucher_hidden.png", pages.driver)
+
+        details.update(
+            {
+                "admin_id": admin.user_id,
+                "buyer_id": buyer.user_id,
+                "order_id": order_id,
+                "product_id": product.product_id,
+                "public_voucher_code": code,
             }
         )
         scenario_artifacts.write_json("details.json", details)

@@ -18,3 +18,16 @@ class LoginPage(BasePage):
 
     def wait_for_success(self) -> None:
         self.wait.until(EC.visibility_of_element_located((By.XPATH, "//*[contains(normalize-space(), 'Browse the newest limited drops.')]")))
+
+    def email_value(self) -> str:
+        return self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "input[type='email']"))).get_attribute("value")
+
+    def flash_text(self) -> str:
+        return self.wait.until(
+            EC.visibility_of_element_located((By.XPATH, "//*[contains(normalize-space(), 'Registration successful')]"))
+        ).text
+
+    def error_text(self) -> str:
+        return self.wait.until(
+            EC.visibility_of_element_located((By.XPATH, "//*[contains(@class,'rose-200') or contains(@class,'notice--danger')]"))
+        ).text

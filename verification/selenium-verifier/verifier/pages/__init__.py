@@ -6,6 +6,7 @@ from .home_page import HomePage
 from .jastiper_orders_page import JastiperOrdersPage
 from .login_page import LoginPage
 from .orders_page import OrdersPage
+from .profile_page import ProfilePage
 from .product_detail_page import ProductDetailPage
 from .register_page import RegisterPage
 from .result_page import ResultPage
@@ -20,6 +21,7 @@ __all__ = [
     "JastiperOrdersPage",
     "LoginPage",
     "OrdersPage",
+    "ProfilePage",
     "ProductDetailPage",
     "RegisterPage",
     "ResultPage",

@@ -99,3 +99,19 @@ class AdminPage(BasePage):
     def wait_for_notice(self, text: str) -> str:
         element = self.wait.until(EC.visibility_of_element_located((By.XPATH, f"//*[contains(normalize-space(), '{text}')]")))
         return element.text
+
+    def order_card_count(self) -> int:
+        return len(self.driver.find_elements(By.CSS_SELECTOR, ".order-card"))
+
+    def has_order(self, order_id: int) -> bool:
+        elements = self.driver.find_elements(
+            By.XPATH,
+            f"//article[contains(@class,'order-card')][.//h2[normalize-space()='{order_id}']]",
+        )
+        return bool(elements)
+
+    def open_order(self, order_id: int) -> None:
+        self.click_xpath(
+            f"//article[contains(@class,'order-card')][.//h2[normalize-space()='{order_id}']]"
+            "//a[contains(normalize-space(),'Open detail')]"
+        )

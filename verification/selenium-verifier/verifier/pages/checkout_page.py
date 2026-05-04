@@ -37,3 +37,28 @@ class CheckoutPage(BasePage):
             EC.visibility_of_element_located((By.XPATH, "//*[contains(@class,'bg-rose-500/10') or contains(normalize-space(),'Order will reject invalid vouchers')]"))
         )
         return element.text
+
+    def voucher_banner_text(self) -> str:
+        element = self.wait.until(
+            EC.visibility_of_element_located(
+                (
+                    By.XPATH,
+                    "//article[.//h2[normalize-space()='Apply a code']]"
+                    "//*[contains(normalize-space(),'Final validation') or contains(normalize-space(),'Order will reject invalid vouchers.')]",
+                )
+            )
+        )
+        return element.text
+
+    def public_voucher_codes(self) -> list[str]:
+        return [
+            element.text.strip()
+            for element in self.driver.find_elements(
+                By.XPATH,
+                "//article[.//h2[normalize-space()='Apply a code']]//strong",
+            )
+            if element.text.strip()
+        ]
+
+    def has_public_voucher(self, code: str) -> bool:
+        return any(item.upper() == code.upper() for item in self.public_voucher_codes())

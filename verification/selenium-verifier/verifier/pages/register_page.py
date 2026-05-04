@@ -12,4 +12,4 @@ class RegisterPage(BasePage):
         self.fill_css("input[name='email']", email)
         self.fill_css("input[name='username']", username)
         self.fill_css("input[name='password']", password)
-        self.click_xpath("//button[normalize-space()='Register']")
+        self.click_css_js("button[type='submit']")

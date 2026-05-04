@@ -1,6 +1,6 @@
 # Selenium Verifier
 
-Milestone `75%` Selenium and live-service verifier for the frontend repo.
+Milestone `25%`, `50%`, and `75%` Selenium and live-service verifier for the frontend repo.
 
 It runs against either:
 
@@ -14,19 +14,51 @@ The verifier uses:
 
 ## Covered Flows
 
-- frontend reachability and backend health/CORS
-- buyer login
-- catalog and product detail
-- wallet top-up and transaction history
-- checkout with voucher
-- buyer order history and order detail
-- invalid lifecycle transition rejection
-- valid `PAID -> PURCHASED -> SHIPPED -> COMPLETED`
-- buyer rating after completion
-- cancel and refund
-- repeated cancel without double refund
-- admin voucher create, edit, disable
-- disabled voucher hidden from the public active list
+Current live suite scenarios:
+
+- `health_and_environment_sanity`
+- `login_catalog_with_configured_buyer`
+- `milestone25_register_login_browse_profile_and_alias_routes`
+- `route_guards_search_filters_and_role_navigation`
+- `checkout_wallet_history_and_order_views`
+- `invalid_voucher_rejection_and_public_voucher_ui`
+- `order_lifecycle_invalid_transition_and_rating`
+- `admin_order_monitoring_and_checkout_visibility`
+- `cancel_refund_is_idempotent`
+- `admin_voucher_management_and_public_visibility`
+
+Milestone coverage:
+
+- `25%`
+  - landing page loads
+  - register via UI
+  - login via UI
+  - product list and detail
+  - protected route redirect to login
+  - buyer profile navigation
+- `50%`
+  - wallet top-up and balance visibility
+  - voucher-aware checkout
+  - invalid voucher rejection in the checkout UI and backend
+  - order creation to `PAID`
+  - wallet history reflects `TOPUP` and `PAYMENT`
+- `75%`
+  - buyer order history and active order queue
+  - jastiper queue and valid lifecycle transitions
+  - invalid transition rejection
+  - rating after `COMPLETED`
+  - cancel and idempotent refund
+  - admin order monitoring
+  - admin voucher create, edit, disable
+  - disabled voucher removed from the public checkout list
+  - wallet refund visibility
+
+Additional current-UI coverage:
+
+- `/browse` and `/products` alias coverage
+- catalog search interaction
+- role-aware profile cards for buyer, jastiper, and admin
+- runtime admin-token entry path for voucher management
 
 Concurrency verification remains in the backend services and in the optional concurrency runner here. Do not run destructive concurrency checks against shared demo deployments unless you intend to mutate shared data.
 

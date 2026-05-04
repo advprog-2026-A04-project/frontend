@@ -37,6 +37,18 @@ class BasePage:
         element.click()
         return element
 
+    def click_xpath_js(self, xpath: str):
+        element = self.wait.until(EC.visibility_of_element_located((By.XPATH, xpath)))
+        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
+        self.driver.execute_script("arguments[0].click();", element)
+        return element
+
+    def click_css_js(self, css: str):
+        element = self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, css)))
+        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
+        self.driver.execute_script("arguments[0].click();", element)
+        return element
+
     def fill_css(self, css: str, value: str):
         field = self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, css)))
         self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", field)

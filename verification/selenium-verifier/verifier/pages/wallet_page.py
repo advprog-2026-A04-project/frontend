@@ -23,3 +23,13 @@ class WalletPage(BasePage):
             EC.visibility_of_element_located((By.XPATH, "//*[contains(normalize-space(), 'was marked successful.')]"))
         )
         return element.text
+
+    def transaction_types(self) -> list[str]:
+        return [
+            element.text.strip()
+            for element in self.driver.find_elements(By.XPATH, "//article[.//h2[contains(normalize-space(),'Wallet transaction history')]]//h3")
+            if element.text.strip()
+        ]
+
+    def has_transaction_type(self, txn_type: str) -> bool:
+        return txn_type in self.transaction_types()
