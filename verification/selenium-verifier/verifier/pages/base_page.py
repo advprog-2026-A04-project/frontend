@@ -14,60 +14,56 @@ class BasePage:
         self.base_url = base_url.rstrip("/")
         self.pause_controller = pause_controller
 
-    def pause_checkpoint(self, label: str) -> None:
+    def pause_checkpoint(self, label: str, *, artifacts=None, test_name: str | None = None) -> bool:
         if self.pause_controller is None:
-            return
-        self.pause_controller.checkpoint(driver=self.driver, label=label)
+            return False
+        return self.pause_controller.checkpoint(
+            driver=self.driver,
+            label=label,
+            artifacts=artifacts,
+            test_name=test_name,
+        )
 
     def open(self, path: str) -> None:
-        self.pause_checkpoint(f"open {path}")
         self.driver.get(urljoin(f"{self.base_url}/", path.lstrip("/")))
         self.wait_for_ready()
 
     def wait_for_ready(self) -> None:
-        self.pause_checkpoint("wait_for_ready")
         self.wait.until(lambda browser: browser.execute_script("return document.readyState") == "complete")
 
     def wait_for_text(self, text: str):
-        self.pause_checkpoint(f"wait_for_text {text}")
         return self.wait.until(
             EC.visibility_of_element_located((By.XPATH, f"//*[contains(normalize-space(), \"{text}\")]"))
         )
 
     def wait_for_path(self, expected_path: str):
-        self.pause_checkpoint(f"wait_for_path {expected_path}")
         return self.wait.until(lambda _driver: self.current_path() == expected_path)
 
     def click_xpath(self, xpath: str):
-        self.pause_checkpoint(f"click_xpath {xpath}")
         element = self.wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
         self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
         element.click()
         return element
 
     def click_css(self, css: str):
-        self.pause_checkpoint(f"click_css {css}")
         element = self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, css)))
         self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
         element.click()
         return element
 
     def click_xpath_js(self, xpath: str):
-        self.pause_checkpoint(f"click_xpath_js {xpath}")
         element = self.wait.until(EC.visibility_of_element_located((By.XPATH, xpath)))
         self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
         self.driver.execute_script("arguments[0].click();", element)
         return element
 
     def click_css_js(self, css: str):
-        self.pause_checkpoint(f"click_css_js {css}")
         element = self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, css)))
         self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
         self.driver.execute_script("arguments[0].click();", element)
         return element
 
     def fill_css(self, css: str, value: str):
-        self.pause_checkpoint(f"fill_css {css}")
         field = self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, css)))
         self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", field)
         field.click()
@@ -76,7 +72,6 @@ class BasePage:
         return field
 
     def fill_xpath(self, xpath: str, value: str):
-        self.pause_checkpoint(f"fill_xpath {xpath}")
         field = self.wait.until(EC.visibility_of_element_located((By.XPATH, xpath)))
         self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", field)
         field.click()
@@ -85,7 +80,6 @@ class BasePage:
         return field
 
     def fill_xpath_js(self, xpath: str, value: str):
-        self.pause_checkpoint(f"fill_xpath_js {xpath}")
         field = self.wait.until(EC.visibility_of_element_located((By.XPATH, xpath)))
         self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", field)
         self.driver.execute_script(
@@ -112,7 +106,6 @@ class BasePage:
         return self.driver.current_url
 
     def refresh(self) -> None:
-        self.pause_checkpoint("refresh")
         self.driver.refresh()
         self.wait_for_ready()
 

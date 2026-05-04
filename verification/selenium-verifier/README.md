@@ -137,7 +137,7 @@ Notes:
 - The frontend admin token is entered manually at runtime and should never be committed in a `VITE_` variable.
 - `PAUSE_AFTER_SCENARIO=true` keeps the browser open after each browser-driven test until you press Enter.
 - `PAUSE_ON_FAILURE=true` only pauses when a browser-driven test fails.
-- `PAUSE_ON_ENTER=true` lets you press Enter in the terminal during a run and pause at the next Selenium page action.
+- `PAUSE_ON_ENTER=true` lets you press Enter in the terminal during a run and pause at the next safe browser checkpoint.
 - Use `HEADLESS=false` when you actually want to watch the browser during a pause.
 
 ## Run Commands
@@ -204,12 +204,73 @@ $env:HEADLESS='false'
 pytest tests/test_live_verification.py -m smoke -s
 ```
 
+Pause on demand with the pytest flag instead of the environment variable:
+
+```powershell
+$env:HEADLESS='false'
+pytest tests/test_live_verification.py -m smoke -s --pause-on-enter
+```
+
 Behavior:
 
 - press Enter once while the suite is running
-- the verifier pauses at the next Selenium page action or wait helper
+- the verifier pauses at the next safe browser checkpoint such as login loaded, catalog loaded, checkout loaded, result loaded, or admin loaded
 - press Enter again to resume
-- this needs an interactive terminal; it will not work in a non-interactive piped run
+- this needs an interactive terminal and `-s` or `--capture=no`
+- if stdin is not interactive, the verifier logs a warning and continues without pausing
+
+## Interactive pause-on-enter mode
+
+Purpose:
+
+- manual debugging while you watch the browser
+- inspect the page at stable checkpoints without freezing the test in arbitrary helper code
+
+How to run:
+
+```powershell
+$env:HEADLESS='false'
+$env:PAUSE_ON_ENTER='true'
+python -m pytest -s tests/test_live_verification.py
+```
+
+or:
+
+```powershell
+$env:HEADLESS='false'
+python -m pytest -s --pause-on-enter tests/test_live_verification.py
+```
+
+How it works:
+
+- press Enter once while the test is running
+- the controller sets a pause request in the background
+- the next safe page checkpoint pauses the test
+- the verifier prints:
+  - scenario name
+  - checkpoint label
+  - current URL
+  - page title
+  - pause screenshot path, if saved
+- inspect the browser manually
+- press Enter again to continue
+
+Requirements:
+
+- real interactive terminal
+- `-s` or `--capture=no`
+- `HEADLESS=false` if you want to watch the browser
+
+Limitations:
+
+- not for CI
+- not reliable in piped or non-interactive runs
+- automated regression cannot fully prove the live Enter key flow because that requires a real interactive terminal
+
+How to disable:
+
+- unset `PAUSE_ON_ENTER`
+- omit `--pause-on-enter`
 
 ## Run Against Deployment
 

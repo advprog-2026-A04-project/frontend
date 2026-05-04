@@ -28,6 +28,15 @@ from verifier.services import build_services
 from verifier.setup_helpers import SetupHelper
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--pause-on-enter",
+        action="store_true",
+        default=False,
+        help="Pause the Selenium run at the next safe checkpoint after you press Enter in an interactive terminal.",
+    )
+
+
 @pytest.hookimpl(hookwrapper=True, tryfirst=True)
 def pytest_runtest_makereport(item, call):
     outcome = yield
@@ -59,12 +68,41 @@ def setup_helper(settings, services):
 
 
 @pytest.fixture(scope="session")
-def pause_controller(settings):
-    return PauseController(settings.pause_on_enter)
+def pause_controller(settings, pytestconfig):
+    controller = PauseController(
+        settings.pause_on_enter or pytestconfig.getoption("--pause-on-enter"),
+        capture_mode=pytestconfig.getoption("capture"),
+    )
+    yield controller
+    controller.stop()
+
+
+@pytest.fixture(autouse=True)
+def bind_pause_context(request, pause_controller, scenario_artifacts):
+    pause_controller.bind_context(
+        scenario_name=request.node.nodeid,
+        artifacts=scenario_artifacts,
+    )
+    yield pause_controller
+    pause_controller.clear_context()
+
+
+def _safe_browser_state(driver) -> tuple[str, str]:
+    current_url = "<unavailable>"
+    page_title = "<unavailable>"
+    try:
+        current_url = driver.current_url or "<unavailable>"
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        page_title = driver.title or "<unavailable>"
+    except Exception:  # noqa: BLE001
+        pass
+    return current_url, page_title
 
 
 @pytest.fixture()
-def browser(settings, request) -> Generator[tuple, None, None]:
+def browser(settings, request, pause_controller) -> Generator[tuple, None, None]:
     driver = build_driver(settings)
     wait = WebDriverWait(driver, 30)
     yield driver, wait
@@ -74,20 +112,30 @@ def browser(settings, request) -> Generator[tuple, None, None]:
     )
     if should_pause:
         reason = "failure" if report is not None and report.failed else "scenario completion"
-        print(
-            f"\n[verifier] Pause requested after {request.node.name} ({reason}). "
-            f"Current URL: {driver.current_url}\n"
-            "Press Enter to close the browser and continue..."
-        )
-        try:
-            input()
-        except EOFError:
-            print("[verifier] Input stream is unavailable; continuing without an interactive pause.")
+        current_url, page_title = _safe_browser_state(driver)
+        if pause_controller.prompt_available:
+            print(
+                f"\n[verifier] Pause requested after {request.node.name} ({reason}).\n"
+                f"  current_url: {current_url}\n"
+                f"  page_title: {page_title}\n"
+                "Press Enter to close the browser and continue..."
+            )
+            try:
+                input()
+            except EOFError:
+                pause_controller.warn_unavailable(
+                    "Interactive browser pause could not read stdin; continuing without waiting."
+                )
+        else:
+            pause_controller.warn_unavailable(
+                "PAUSE_AFTER_SCENARIO or PAUSE_ON_FAILURE was requested but interactive terminal input is unavailable. "
+                "Run pytest with -s or --capture=no from a real interactive terminal."
+            )
     driver.quit()
 
 
 @pytest.fixture()
-def pages(browser, settings, pause_controller):
+def pages(browser, settings, pause_controller, request, scenario_artifacts):
     driver, wait = browser
     return SimpleNamespace(
         home=HomePage(driver, wait, settings.frontend_base_url, pause_controller),
@@ -104,6 +152,12 @@ def pages(browser, settings, pause_controller):
         admin=AdminPage(driver, wait, settings.frontend_base_url, pause_controller),
         driver=driver,
         wait=wait,
+        pause_checkpoint=lambda label: pause_controller.checkpoint(
+            driver=driver,
+            label=label,
+            artifacts=scenario_artifacts,
+            test_name=request.node.nodeid,
+        ),
     )
 
 

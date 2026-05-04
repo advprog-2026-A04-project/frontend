@@ -7,6 +7,7 @@ class RegisterPage(BasePage):
     def load(self) -> None:
         self.open("/register")
         self.wait_for_text("Create a buyer account")
+        self.pause_checkpoint("register_loaded")
 
     def register(self, email: str, username: str, password: str) -> None:
         self.fill_css("input[name='email']", email)

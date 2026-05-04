@@ -12,6 +12,7 @@ class CheckoutPage(BasePage):
 
     def wait_loaded(self) -> None:
         self.wait_for_text("Complete your order.")
+        self.pause_checkpoint("checkout_loaded")
 
     def set_shipping_address(self, address: str) -> None:
         self.fill_css("textarea", address)
@@ -23,6 +24,7 @@ class CheckoutPage(BasePage):
         self.fill_css("input[placeholder='MILESTONE10']", code)
 
     def submit(self) -> None:
+        self.pause_checkpoint("checkout_ready_to_submit")
         self.click_xpath("//button[contains(normalize-space(), 'Checkout Now')]")
 
     def submit_button(self):
@@ -75,6 +77,7 @@ class CheckoutPage(BasePage):
     def submit_twice_quickly(self) -> dict[str, str | bool]:
         button = self.submit_button()
         initial_text = button.text
+        self.pause_checkpoint("checkout_double_submit_ready")
         self.driver.execute_script("arguments[0].click();", button)
         busy = self.wait_for_submit_busy()
         second_click_attempted = False
@@ -116,6 +119,7 @@ class CheckoutPage(BasePage):
         element = self.wait.until(
             EC.visibility_of_element_located((By.XPATH, "//*[contains(@class,'bg-rose-500/10') or contains(normalize-space(),'Order will reject invalid vouchers')]"))
         )
+        self.pause_checkpoint("checkout_error_visible")
         return element.text
 
     def voucher_banner_text(self) -> str:
@@ -128,6 +132,7 @@ class CheckoutPage(BasePage):
                 )
             )
         )
+        self.pause_checkpoint("checkout_voucher_banner_visible")
         return element.text
 
     def public_voucher_codes(self) -> list[str]:

@@ -10,6 +10,7 @@ class OrdersPage(BasePage):
     def load(self) -> None:
         self.open("/orders")
         self.wait_for_text("Track your active and completed orders.")
+        self.pause_checkpoint("orders_loaded")
 
     def order_ids(self) -> list[int]:
         cards = self.wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".order-card")))

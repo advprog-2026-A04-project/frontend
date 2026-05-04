@@ -10,6 +10,7 @@ class LoginPage(BasePage):
     def load(self) -> None:
         self.open("/login")
         self.wait_for_text("Log in")
+        self.pause_checkpoint("login_loaded")
 
     def login(self, email: str, password: str) -> None:
         self.fill_css("input[type='email']", email)
@@ -18,6 +19,7 @@ class LoginPage(BasePage):
 
     def wait_for_success(self) -> None:
         self.wait.until(EC.visibility_of_element_located((By.XPATH, "//*[contains(normalize-space(), 'Browse the newest limited drops.')]")))
+        self.pause_checkpoint("login_success")
 
     def email_value(self) -> str:
         return self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "input[type='email']"))).get_attribute("value")
@@ -33,4 +35,6 @@ class LoginPage(BasePage):
         ).text
 
     def wait_for_error(self) -> str:
-        return self.error_text()
+        message = self.error_text()
+        self.pause_checkpoint("login_error_visible")
+        return message

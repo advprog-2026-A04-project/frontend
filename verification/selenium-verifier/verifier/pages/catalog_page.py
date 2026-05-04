@@ -15,10 +15,12 @@ class CatalogPage(BasePage):
     def load(self) -> None:
         self.open("/products")
         self.wait_for_text("Browse the newest limited drops.")
+        self.pause_checkpoint("catalog_loaded")
 
     def load_browse(self) -> None:
         self.open("/browse")
         self.wait_for_text("Browse the newest limited drops.")
+        self.pause_checkpoint("browse_catalog_loaded")
 
     def product_cards(self):
         return self.wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".product-card")))
@@ -81,7 +83,9 @@ class CatalogPage(BasePage):
                 and all(badge.strip().upper() == label.strip().upper() for badge in self.visible_category_badges())
             )
         )
-        return self.visible_category_badges()
+        badges = self.visible_category_badges()
+        self.pause_checkpoint("catalog_category_filtered")
+        return badges
 
     def open_product_by_name(self, name: str) -> None:
         link = self.wait.until(

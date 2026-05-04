@@ -10,6 +10,7 @@ class ProfilePage(BasePage):
     def load(self) -> None:
         self.open("/profile")
         self.wait_for_text("Profile")
+        self.pause_checkpoint("profile_loaded")
 
     def heading_text(self) -> str:
         return self.wait.until(

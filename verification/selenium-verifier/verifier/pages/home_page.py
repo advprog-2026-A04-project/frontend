@@ -10,6 +10,7 @@ class HomePage(BasePage):
     def load(self) -> None:
         self.open("/")
         self.wait_for_text("Secure hype drops through the newer JSON storefront.")
+        self.pause_checkpoint("home_loaded")
 
     def start_register(self) -> None:
         self.click_xpath("//a[normalize-space()='Create Account' or normalize-space()='Register']")

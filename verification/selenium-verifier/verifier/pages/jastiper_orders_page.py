@@ -10,6 +10,7 @@ class JastiperOrdersPage(BasePage):
     def load(self) -> None:
         self.open("/jastiper/orders")
         self.wait_for_text("Process active orders")
+        self.pause_checkpoint("jastiper_orders_loaded")
 
     def has_order(self, order_id: int) -> bool:
         elements = self.driver.find_elements(
@@ -32,4 +33,5 @@ class JastiperOrdersPage(BasePage):
 
     def wait_for_notice(self, text: str) -> str:
         element = self.wait.until(EC.visibility_of_element_located((By.XPATH, f"//*[contains(normalize-space(), '{text}')]")))
+        self.pause_checkpoint("jastiper_notice_visible")
         return element.text

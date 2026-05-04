@@ -12,6 +12,7 @@ class ProductDetailPage(BasePage):
     def wait_loaded(self) -> None:
         self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".detail-layout")))
         self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".detail-copy h1")))
+        self.pause_checkpoint("product_detail_loaded")
 
     def product_name(self) -> str:
         return self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".detail-copy h1"))).text

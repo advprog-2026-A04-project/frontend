@@ -10,6 +10,7 @@ class AdminPage(BasePage):
     def load(self) -> None:
         self.open("/admin")
         self.wait_for_text("Voucher management and order monitoring")
+        self.pause_checkpoint("admin_loaded")
 
     def set_admin_token(self, token: str) -> None:
         self.fill_xpath_js("//label[.//span[normalize-space()='Voucher admin token']]//input", token)
@@ -78,6 +79,7 @@ class AdminPage(BasePage):
                 (By.XPATH, f"//div[contains(@class,'service-panel')][.//strong[normalize-space()='{code}']]")
             )
         )
+        self.pause_checkpoint("admin_voucher_visible")
 
     def voucher_status_text(self, code: str) -> str:
         return self.wait.until(
@@ -104,14 +106,17 @@ class AdminPage(BasePage):
 
     def wait_for_notice(self, text: str) -> str:
         element = self.wait.until(EC.visibility_of_element_located((By.XPATH, f"//*[contains(normalize-space(), '{text}')]")))
+        self.pause_checkpoint("admin_notice_visible")
         return element.text
 
     def error_notice_text(self) -> str:
-        return self.wait.until(
+        text = self.wait.until(
             EC.visibility_of_element_located(
                 (By.XPATH, "//*[contains(@class,'notice--danger') or contains(@class,'rose-200')]")
             )
         ).text
+        self.pause_checkpoint("admin_error_visible")
+        return text
 
     def order_card_count(self) -> int:
         return len(self.driver.find_elements(By.CSS_SELECTOR, ".order-card"))
@@ -135,3 +140,4 @@ class AdminPage(BasePage):
                 (By.XPATH, f"//article[contains(@class,'order-card')][.//h2[normalize-space()='{order_id}']]")
             )
         )
+        self.pause_checkpoint("admin_order_visible")

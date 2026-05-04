@@ -10,6 +10,7 @@ class WalletPage(BasePage):
     def load(self) -> None:
         self.open("/wallet")
         self.wait_for_text("Add balance instantly")
+        self.pause_checkpoint("wallet_loaded")
 
     def balance_text(self) -> str:
         return self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".card--hero h1"))).text
@@ -22,6 +23,7 @@ class WalletPage(BasePage):
         element = self.wait.until(
             EC.visibility_of_element_located((By.XPATH, "//*[contains(normalize-space(), 'was marked successful.')]"))
         )
+        self.pause_checkpoint("wallet_topup_success")
         return element.text
 
     def transaction_types(self) -> list[str]:

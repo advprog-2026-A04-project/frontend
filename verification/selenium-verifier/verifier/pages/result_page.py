@@ -16,6 +16,7 @@ class ResultPage(BasePage):
             )
         )
         self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".card--hero h1")))
+        self.pause_checkpoint("result_loaded")
 
     def flash_text(self) -> str:
         return self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".notice"))).text
@@ -53,6 +54,7 @@ class ResultPage(BasePage):
 
     def wait_for_rating_success(self) -> str:
         element = self.wait.until(EC.visibility_of_element_located((By.XPATH, "//*[contains(normalize-space(), 'Rating submitted.')]")))
+        self.pause_checkpoint("rating_success_visible")
         return element.text
 
     def has_refund_notice(self) -> bool:
