@@ -11,7 +11,7 @@ export function formatDate(value) {
     return '-';
   }
 
-  return new Date(value).toLocaleString('en-US', {
+  return new Date(value).toLocaleString('id-ID', {
     dateStyle: 'medium',
     timeStyle: 'short',
   });
@@ -21,18 +21,50 @@ export function slugStatus(status) {
   return String(status || 'unknown').toLowerCase();
 }
 
-export function statusLabel(order) {
-  if (!order) {
-    return 'Unknown';
-  }
+export function statusLabel(orderOrStatus) {
+  const status = typeof orderOrStatus === 'string' ? orderOrStatus : orderOrStatus?.status;
 
-  if (order.status === 'FAILED') {
-    return 'Checkout failed';
+  switch (status) {
+    case 'PAID':
+      return 'Paid';
+    case 'PURCHASED':
+      return 'Purchased';
+    case 'SHIPPED':
+      return 'Shipped';
+    case 'COMPLETED':
+      return 'Completed';
+    case 'CANCELLED':
+      return 'Cancelled';
+    case 'FAILED':
+      return 'Failed';
+    case 'PENDING':
+      return 'Pending';
+    default:
+      return 'Unknown';
   }
+}
 
-  if (order.status === 'PAID') {
-    return 'Paid';
+export function isActiveOrder(status) {
+  return ['PAID', 'PURCHASED', 'SHIPPED'].includes(status);
+}
+
+export function canCancelOrder(status) {
+  return ['PAID', 'PURCHASED'].includes(status);
+}
+
+export function canRateOrder(order, userRole) {
+  return userRole === 'TITIPER' && order?.status === 'COMPLETED' && !order?.rating;
+}
+
+export function allowedNextStatuses(status) {
+  switch (status) {
+    case 'PAID':
+      return ['PURCHASED'];
+    case 'PURCHASED':
+      return ['SHIPPED'];
+    case 'SHIPPED':
+      return ['COMPLETED'];
+    default:
+      return [];
   }
-
-  return 'Pending';
 }
