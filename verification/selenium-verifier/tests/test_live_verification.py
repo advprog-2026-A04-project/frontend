@@ -203,7 +203,6 @@ def test_milestone25_register_login_browse_profile_and_alias_routes(
         scenario_artifacts.save_screenshot("landing_home.png", pages.driver)
 
         service_health_cards = pages.home.service_health_count()
-        featured_cards = pages.home.featured_card_count()
         assert service_health_cards >= 4, "Expected the landing page health section to render service cards."
 
         buyer = setup_helper.new_user("ui-register")
@@ -247,7 +246,6 @@ def test_milestone25_register_login_browse_profile_and_alias_routes(
                 "buyer_email": buyer.email,
                 "buyer_role": session_profile["role"],
                 "landing_service_health_cards": service_health_cards,
-                "landing_featured_cards": featured_cards,
                 "browse_count": browse_count,
                 "products_count": products_count,
                 "detail_path": detail_path,
@@ -308,7 +306,7 @@ def test_route_guards_search_filters_and_role_navigation(
         )
         names_after_search = pages.catalog.visible_product_names()
         assert names_after_search
-        categories = [label for label in pages.catalog.category_labels() if label != "All"]
+        categories = [label for label in pages.catalog.category_labels() if label.upper() != "ALL"]
         selected_category = None
         if categories:
             selected_category = categories[0]
