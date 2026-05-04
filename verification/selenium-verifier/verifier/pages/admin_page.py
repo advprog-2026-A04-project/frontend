@@ -23,6 +23,7 @@ class AdminPage(BasePage):
         code: str | None = None,
         discount_value: int | None = None,
         quota_total: int | None = None,
+        start_at: str | None = None,
         end_at: str | None = None,
     ) -> None:
         if code is not None:
@@ -31,8 +32,13 @@ class AdminPage(BasePage):
             self.fill_xpath_js("//label[.//span[normalize-space()='Discount value']]//input", str(discount_value))
         if quota_total is not None:
             self.fill_xpath_js("//label[.//span[normalize-space()='Quota total']]//input", str(quota_total))
+        if start_at is not None:
+            self.fill_xpath_js("//label[.//span[normalize-space()='Start at']]//input", start_at)
         if end_at is not None:
             self.fill_xpath_js("//label[.//span[normalize-space()='End at']]//input", end_at)
+
+    def clear_admin_token(self) -> None:
+        self.fill_xpath_js("//label[.//span[normalize-space()='Voucher admin token']]//input", "")
 
     def submit_form(self, editing: bool = False) -> None:
         label = "Update voucher" if editing else "Create voucher"
@@ -100,6 +106,13 @@ class AdminPage(BasePage):
         element = self.wait.until(EC.visibility_of_element_located((By.XPATH, f"//*[contains(normalize-space(), '{text}')]")))
         return element.text
 
+    def error_notice_text(self) -> str:
+        return self.wait.until(
+            EC.visibility_of_element_located(
+                (By.XPATH, "//*[contains(@class,'notice--danger') or contains(@class,'rose-200')]")
+            )
+        ).text
+
     def order_card_count(self) -> int:
         return len(self.driver.find_elements(By.CSS_SELECTOR, ".order-card"))
 
@@ -114,4 +127,11 @@ class AdminPage(BasePage):
         self.click_xpath(
             f"//article[contains(@class,'order-card')][.//h2[normalize-space()='{order_id}']]"
             "//a[contains(normalize-space(),'Open detail')]"
+        )
+
+    def wait_for_order(self, order_id: int) -> None:
+        self.wait.until(
+            EC.visibility_of_element_located(
+                (By.XPATH, f"//article[contains(@class,'order-card')][.//h2[normalize-space()='{order_id}']]")
+            )
         )

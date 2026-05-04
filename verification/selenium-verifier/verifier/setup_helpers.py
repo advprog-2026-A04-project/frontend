@@ -78,6 +78,7 @@ class SetupHelper:
         self,
         token: str,
         preferred_jastiper_id: int | str | None = None,
+        excluded_product_ids: set[str] | None = None,
         evidence=None,
         evidence_name: str | None = None,
     ) -> ProductInfo:
@@ -98,6 +99,8 @@ class SetupHelper:
                 raw=payload,
             )
 
+        excluded = excluded_product_ids or set()
+
         response = self.services.inventory.search(
             token,
             evidence=evidence,
@@ -108,7 +111,11 @@ class SetupHelper:
             raise AssertionError("Inventory search returned no products.")
 
         preferred = str(preferred_jastiper_id) if preferred_jastiper_id is not None else None
-        sorted_products = sorted(products, key=lambda item: int(item.get("stock") or 0), reverse=True)
+        available_products = [item for item in products if str(item["id"]) not in excluded]
+        sorted_products = sorted(available_products, key=lambda item: int(item.get("stock") or 0), reverse=True)
+        if not sorted_products:
+            raise AssertionError("Inventory search returned no products outside the excluded product set.")
+
         viable = None
         if preferred:
             viable = next(
@@ -121,7 +128,12 @@ class SetupHelper:
             )
 
         if viable is None:
-            viable = next((item for item in sorted_products if int(item["stock"]) >= 1), sorted_products[0])
+            viable = next((item for item in sorted_products if int(item["stock"]) >= 1), None)
+
+        if viable is None:
+            raise AssertionError(
+                "Inventory search returned no in-stock products. Reset the local demo state or use a fresh deployment."
+            )
 
         return ProductInfo(
             product_id=viable["id"],

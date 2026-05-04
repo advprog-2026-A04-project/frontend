@@ -36,3 +36,6 @@ class ProfilePage(BasePage):
 
     def open_card(self, title: str) -> None:
         self.click_xpath(f"//*[self::a or self::button][.//h2[normalize-space()='{title}']]")
+
+    def logout_via_ui(self) -> None:
+        self.click_xpath("//button[.//h2[normalize-space()='Logout']]")

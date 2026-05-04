@@ -31,3 +31,6 @@ class LoginPage(BasePage):
         return self.wait.until(
             EC.visibility_of_element_located((By.XPATH, "//*[contains(@class,'rose-200') or contains(@class,'notice--danger')]"))
         ).text
+
+    def wait_for_error(self) -> str:
+        return self.error_text()

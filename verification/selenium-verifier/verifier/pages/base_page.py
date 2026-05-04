@@ -25,6 +25,9 @@ class BasePage:
             EC.visibility_of_element_located((By.XPATH, f"//*[contains(normalize-space(), \"{text}\")]"))
         )
 
+    def wait_for_path(self, expected_path: str):
+        return self.wait.until(lambda _driver: self.current_path() == expected_path)
+
     def click_xpath(self, xpath: str):
         element = self.wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
         self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
@@ -90,6 +93,22 @@ class BasePage:
 
     def current_url(self) -> str:
         return self.driver.current_url
+
+    def refresh(self) -> None:
+        self.driver.refresh()
+        self.wait_for_ready()
+
+    def local_storage_value(self, key: str):
+        return self.driver.execute_script("return window.localStorage.getItem(arguments[0]);", key)
+
+    def local_storage_has_key(self, key: str) -> bool:
+        return self.local_storage_value(key) is not None
+
+    def wait_for_local_storage_key(self, key: str):
+        return self.wait.until(lambda _driver: self.local_storage_value(key))
+
+    def wait_for_local_storage_absent(self, key: str):
+        return self.wait.until(lambda _driver: self.local_storage_value(key) is None)
 
     def user_chip_text(self) -> str:
         return self.driver.execute_script(

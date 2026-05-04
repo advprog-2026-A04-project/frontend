@@ -7,6 +7,11 @@ from .base_page import BasePage
 
 
 class CatalogPage(BasePage):
+    CATEGORY_SECTION_XPATH = (
+        "//section[contains(@class,'space-y-4')]"
+        "[.//button[@type='button'][normalize-space()='All']]"
+    )
+
     def load(self) -> None:
         self.open("/products")
         self.wait_for_text("Browse the newest limited drops.")
@@ -17,6 +22,16 @@ class CatalogPage(BasePage):
 
     def product_cards(self):
         return self.wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".product-card")))
+
+    def category_buttons(self):
+        return [
+            element
+            for element in self.driver.find_elements(
+                By.XPATH,
+                f"{self.CATEGORY_SECTION_XPATH}//button[@type='button']",
+            )
+            if element.text.strip()
+        ]
 
     def card_count(self) -> int:
         return len(self.product_cards())
@@ -38,14 +53,35 @@ class CatalogPage(BasePage):
         ]
 
     def category_labels(self) -> list[str]:
+        return [element.text.strip() for element in self.category_buttons()]
+
+    def select_category(self, label: str) -> None:
+        expected = label.strip()
+        for button in self.category_buttons():
+            if button.text.strip() == expected:
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", button)
+                self.driver.execute_script("arguments[0].click();", button)
+                return
+        raise AssertionError(f"Category button '{label}' was not found in the catalog filter controls.")
+
+    def visible_category_badges(self) -> list[str]:
         return [
             element.text.strip()
-            for element in self.driver.find_elements(By.XPATH, "//button[@type='button']")
+            for element in self.driver.find_elements(
+                By.XPATH,
+                "//article[contains(@class,'product-card')]//span[contains(@class,'text-cyan') and not(contains(normalize-space(),'Stock '))]",
+            )
             if element.text.strip()
         ]
 
-    def select_category(self, label: str) -> None:
-        self.click_xpath_js(f"//button[@type='button'][normalize-space()='{label}']")
+    def wait_for_category_badges(self, label: str) -> list[str]:
+        self.wait.until(
+            lambda _driver: (
+                len(self.visible_category_badges()) > 0
+                and all(badge.strip().upper() == label.strip().upper() for badge in self.visible_category_badges())
+            )
+        )
+        return self.visible_category_badges()
 
     def open_product_by_name(self, name: str) -> None:
         link = self.wait.until(
