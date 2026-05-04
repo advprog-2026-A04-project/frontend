@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Generator
 from types import SimpleNamespace
 
 import pytest
@@ -26,6 +27,13 @@ from verifier.services import build_services
 from verifier.setup_helpers import SetupHelper
 
 
+@pytest.hookimpl(hookwrapper=True, tryfirst=True)
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    report = outcome.get_result()
+    setattr(item, f"rep_{report.when}", report)
+
+
 @pytest.fixture(scope="session")
 def settings():
     return load_settings()
@@ -50,10 +58,25 @@ def setup_helper(settings, services):
 
 
 @pytest.fixture()
-def browser(settings):
+def browser(settings, request) -> Generator[tuple, None, None]:
     driver = build_driver(settings)
     wait = WebDriverWait(driver, 30)
     yield driver, wait
+    report = getattr(request.node, "rep_call", None)
+    should_pause = settings.pause_after_scenario or (
+        settings.pause_on_failure and report is not None and report.failed
+    )
+    if should_pause:
+        reason = "failure" if report is not None and report.failed else "scenario completion"
+        print(
+            f"\n[verifier] Pause requested after {request.node.name} ({reason}). "
+            f"Current URL: {driver.current_url}\n"
+            "Press Enter to close the browser and continue..."
+        )
+        try:
+            input()
+        except EOFError:
+            print("[verifier] Input stream is unavailable; continuing without an interactive pause.")
     driver.quit()
 
 

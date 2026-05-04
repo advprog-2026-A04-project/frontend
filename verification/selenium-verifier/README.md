@@ -110,6 +110,8 @@ Optional:
 ```env
 HEADLESS=true
 BROWSER=edge
+PAUSE_AFTER_SCENARIO=false
+PAUSE_ON_FAILURE=false
 DEFAULT_TOPUP_AMOUNT=1000000
 DEFAULT_PRODUCT_ID=
 DEFAULT_VOUCHER_CODE=MILESTONE10
@@ -132,6 +134,9 @@ Notes:
 - `admin_voucher_rejects_missing_or_invalid_admin_token` does not require the real token. It exercises the negative case only.
 - `INTERNAL_API_TOKEN` is not required for the main Selenium suite. It is only used by the optional concurrency runner.
 - The frontend admin token is entered manually at runtime and should never be committed in a `VITE_` variable.
+- `PAUSE_AFTER_SCENARIO=true` keeps the browser open after each browser-driven test until you press Enter.
+- `PAUSE_ON_FAILURE=true` only pauses when a browser-driven test fails.
+- Use `HEADLESS=false` when you actually want to watch the browser during a pause.
 
 ## Run Commands
 
@@ -171,6 +176,22 @@ Run one scenario directly:
 
 ```bash
 pytest tests/test_live_verification.py::test_invalid_login_and_logout_clears_session -s
+```
+
+Pause after every browser scenario:
+
+```powershell
+$env:PAUSE_AFTER_SCENARIO='true'
+$env:HEADLESS='false'
+pytest tests/test_live_verification.py -m smoke -s
+```
+
+Pause only on failures:
+
+```powershell
+$env:PAUSE_ON_FAILURE='true'
+$env:HEADLESS='false'
+pytest tests/test_live_verification.py -m live -s
 ```
 
 ## Run Against Deployment
