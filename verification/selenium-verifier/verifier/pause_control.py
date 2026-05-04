@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import os
 import re
 import sys
 import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -23,13 +25,22 @@ class PauseController:
         stdin=None,
         stdout=None,
         start_listener: bool = True,
+        slow_mo_ms: int = 0,
+        sleep_func=time.sleep,
     ) -> None:
         self._stdin = stdin or sys.stdin
         self._stdout = stdout or sys.stdout
+        self._sleep = sleep_func
         self.capture_mode = capture_mode
         self.enabled_requested = enabled
         self.prompt_available = self.capture_mode == "no" and _is_tty(self._stdin) and _is_tty(self._stdout)
         self.active = bool(enabled and self.prompt_available)
+        if slow_mo_ms > 0:
+            self.slow_mo_ms = int(slow_mo_ms)
+        elif self.active:
+            self.slow_mo_ms = 600
+        else:
+            self.slow_mo_ms = 0
 
         self._pause_requested = threading.Event()
         self._resume_requested = threading.Event()
@@ -76,6 +87,11 @@ class PauseController:
 
     def request_resume(self) -> None:
         self._resume_requested.set()
+
+    def slow_down(self, label: str | None = None) -> None:
+        if self.slow_mo_ms <= 0:
+            return
+        self._sleep(self.slow_mo_ms / 1000)
 
     def checkpoint(self, *, driver=None, label: str, artifacts=None, test_name: str | None = None) -> bool:
         if not self.active or not self._pause_requested.is_set():
@@ -125,6 +141,10 @@ class PauseController:
             return self._scenario_name, self._artifacts
 
     def _listen_for_enter(self) -> None:
+        if os.name == "nt":
+            self._listen_for_enter_windows()
+            return
+
         while not self._stop_requested.is_set():
             try:
                 line = self._stdin.readline()
@@ -132,10 +152,40 @@ class PauseController:
                 break
             if line == "":
                 break
-            if self._paused.is_set():
-                self.request_resume()
-            else:
-                self.request_pause()
+            self._handle_enter_press()
+
+    def _listen_for_enter_windows(self) -> None:
+        try:
+            import msvcrt
+        except Exception:  # noqa: BLE001
+            self.warn_unavailable(
+                "Windows console pause listener could not load msvcrt; interactive pause is disabled."
+            )
+            return
+
+        while not self._stop_requested.is_set():
+            try:
+                if not msvcrt.kbhit():
+                    self._sleep(0.03)
+                    continue
+                char = msvcrt.getwch()
+            except Exception:  # noqa: BLE001
+                break
+
+            if char in {"\x00", "\xe0"}:
+                try:
+                    msvcrt.getwch()
+                except Exception:  # noqa: BLE001
+                    pass
+                continue
+            if char in {"\r", "\n"}:
+                self._handle_enter_press()
+
+    def _handle_enter_press(self) -> None:
+        if self._paused.is_set():
+            self.request_resume()
+        else:
+            self.request_pause()
 
     def _safe_attr(self, driver, attr_name: str) -> str:
         if driver is None:

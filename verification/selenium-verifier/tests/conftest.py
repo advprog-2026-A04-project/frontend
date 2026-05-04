@@ -35,6 +35,13 @@ def pytest_addoption(parser):
         default=False,
         help="Pause the Selenium run at the next safe checkpoint after you press Enter in an interactive terminal.",
     )
+    parser.addoption(
+        "--slow-mo-ms",
+        action="store",
+        type=int,
+        default=None,
+        help="Add a delay after shared browser/page actions to make live Selenium runs easier to watch.",
+    )
 
 
 @pytest.hookimpl(hookwrapper=True, tryfirst=True)
@@ -69,9 +76,11 @@ def setup_helper(settings, services):
 
 @pytest.fixture(scope="session")
 def pause_controller(settings, pytestconfig):
+    slow_mo_ms = pytestconfig.getoption("--slow-mo-ms")
     controller = PauseController(
         settings.pause_on_enter or pytestconfig.getoption("--pause-on-enter"),
         capture_mode=pytestconfig.getoption("capture"),
+        slow_mo_ms=settings.slow_mo_ms if slow_mo_ms is None else slow_mo_ms,
     )
     yield controller
     controller.stop()

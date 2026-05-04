@@ -113,6 +113,7 @@ BROWSER=edge
 PAUSE_ON_ENTER=false
 PAUSE_AFTER_SCENARIO=false
 PAUSE_ON_FAILURE=false
+SLOW_MO_MS=0
 DEFAULT_TOPUP_AMOUNT=1000000
 DEFAULT_PRODUCT_ID=
 DEFAULT_VOUCHER_CODE=MILESTONE10
@@ -208,7 +209,7 @@ Pause on demand with the pytest flag instead of the environment variable:
 
 ```powershell
 $env:HEADLESS='false'
-pytest tests/test_live_verification.py -m smoke -s --pause-on-enter
+pytest tests/test_live_verification.py -m smoke -s --pause-on-enter --slow-mo-ms 800
 ```
 
 Behavior:
@@ -218,6 +219,7 @@ Behavior:
 - press Enter again to resume
 - this needs an interactive terminal and `-s` or `--capture=no`
 - if stdin is not interactive, the verifier logs a warning and continues without pausing
+- when interactive pause is active, the verifier also defaults to `600ms` slow-mo between shared browser actions unless you override it
 
 ## Interactive pause-on-enter mode
 
@@ -238,7 +240,7 @@ or:
 
 ```powershell
 $env:HEADLESS='false'
-python -m pytest -s --pause-on-enter tests/test_live_verification.py
+python -m pytest -s --pause-on-enter --slow-mo-ms 800 tests/test_live_verification.py
 ```
 
 How it works:
@@ -254,6 +256,7 @@ How it works:
   - pause screenshot path, if saved
 - inspect the browser manually
 - press Enter again to continue
+- use `--slow-mo-ms` or `SLOW_MO_MS` if you want even more time between actions across the full 16-test live suite
 
 Requirements:
 
@@ -271,6 +274,14 @@ How to disable:
 
 - unset `PAUSE_ON_ENTER`
 - omit `--pause-on-enter`
+- set `SLOW_MO_MS=0` or omit `--slow-mo-ms`
+
+To watch the full 16-test live suite more slowly:
+
+```powershell
+$env:HEADLESS='false'
+python -m pytest -m live -s --pause-on-enter --slow-mo-ms 800
+```
 
 ## Run Against Deployment
 

@@ -51,6 +51,7 @@ class Settings:
     pause_on_enter: bool
     pause_after_scenario: bool
     pause_on_failure: bool
+    slow_mo_ms: int
     default_topup_amount: int
     default_product_id: str | None
     default_voucher_code: str | None
@@ -110,6 +111,7 @@ def load_settings() -> Settings:
         pause_on_enter=_env_bool("PAUSE_ON_ENTER", False),
         pause_after_scenario=_env_bool("PAUSE_AFTER_SCENARIO", False),
         pause_on_failure=_env_bool("PAUSE_ON_FAILURE", False),
+        slow_mo_ms=_env_int("SLOW_MO_MS", 0),
         default_topup_amount=_env_int("DEFAULT_TOPUP_AMOUNT", 1_000_000),
         default_product_id=_env("DEFAULT_PRODUCT_ID"),
         default_voucher_code=_env("DEFAULT_VOUCHER_CODE", "MILESTONE10"),

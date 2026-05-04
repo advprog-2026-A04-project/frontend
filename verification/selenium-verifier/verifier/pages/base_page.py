@@ -24,9 +24,15 @@ class BasePage:
             test_name=test_name,
         )
 
+    def slow_step(self, label: str) -> None:
+        if self.pause_controller is None:
+            return
+        self.pause_controller.slow_down(label)
+
     def open(self, path: str) -> None:
         self.driver.get(urljoin(f"{self.base_url}/", path.lstrip("/")))
         self.wait_for_ready()
+        self.slow_step(f"open:{path}")
 
     def wait_for_ready(self) -> None:
         self.wait.until(lambda browser: browser.execute_script("return document.readyState") == "complete")
@@ -43,24 +49,28 @@ class BasePage:
         element = self.wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
         self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
         element.click()
+        self.slow_step("click_xpath")
         return element
 
     def click_css(self, css: str):
         element = self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, css)))
         self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
         element.click()
+        self.slow_step("click_css")
         return element
 
     def click_xpath_js(self, xpath: str):
         element = self.wait.until(EC.visibility_of_element_located((By.XPATH, xpath)))
         self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
         self.driver.execute_script("arguments[0].click();", element)
+        self.slow_step("click_xpath_js")
         return element
 
     def click_css_js(self, css: str):
         element = self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, css)))
         self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
         self.driver.execute_script("arguments[0].click();", element)
+        self.slow_step("click_css_js")
         return element
 
     def fill_css(self, css: str, value: str):
@@ -69,6 +79,7 @@ class BasePage:
         field.click()
         field.send_keys(Keys.CONTROL, "a")
         field.send_keys(value)
+        self.slow_step("fill_css")
         return field
 
     def fill_xpath(self, xpath: str, value: str):
@@ -77,6 +88,7 @@ class BasePage:
         field.click()
         field.send_keys(Keys.CONTROL, "a")
         field.send_keys(value)
+        self.slow_step("fill_xpath")
         return field
 
     def fill_xpath_js(self, xpath: str, value: str):
@@ -94,6 +106,7 @@ class BasePage:
             field,
             value,
         )
+        self.slow_step("fill_xpath_js")
         return field
 
     def nav_to(self, label: str):
@@ -108,6 +121,7 @@ class BasePage:
     def refresh(self) -> None:
         self.driver.refresh()
         self.wait_for_ready()
+        self.slow_step("refresh")
 
     def local_storage_value(self, key: str):
         return self.driver.execute_script("return window.localStorage.getItem(arguments[0]);", key)

@@ -65,6 +65,7 @@ def test_pause_controller_disabled_by_default_returns_immediately():
     )
 
     assert controller.active is False
+    assert controller.slow_mo_ms == 0
     assert controller.checkpoint(driver=None, label="catalog_loaded") is False
     assert stdout.getvalue() == ""
 
@@ -151,3 +152,51 @@ def test_pause_controller_checkpoint_tolerates_driver_and_screenshot_failures():
     assert "current_url: <unavailable>" in output
     assert "page_title: <unavailable>" in output
     assert "screenshot: <not saved>" in output
+
+
+def test_pause_controller_defaults_to_slow_mo_when_interactive_pause_is_active():
+    controller = PauseController(
+        True,
+        capture_mode="no",
+        stdin=_TTYBuffer(),
+        stdout=_TTYBuffer(),
+        start_listener=False,
+    )
+
+    assert controller.active is True
+    assert controller.slow_mo_ms == 600
+
+
+def test_pause_controller_slow_down_uses_configured_delay():
+    calls: list[float] = []
+    controller = PauseController(
+        False,
+        capture_mode="no",
+        stdin=_TTYBuffer(),
+        stdout=_TTYBuffer(),
+        start_listener=False,
+        slow_mo_ms=250,
+        sleep_func=calls.append,
+    )
+
+    controller.slow_down("catalog_loaded")
+
+    assert calls == [0.25]
+
+
+def test_pause_controller_handle_enter_transitions_between_pause_and_resume():
+    controller = PauseController(
+        True,
+        capture_mode="no",
+        stdin=_TTYBuffer(),
+        stdout=_TTYBuffer(),
+        start_listener=False,
+    )
+
+    controller._handle_enter_press()
+    assert controller.pause_requested is True
+
+    controller._paused.set()
+    controller._handle_enter_press()
+    assert controller.is_paused is True
+    assert controller._resume_requested.is_set() is True
