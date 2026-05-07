@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useMemo, useState } from 'react';
+import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import LoadingState from '../components/LoadingState';
 import PageShell from '../components/PageShell';
@@ -26,6 +26,10 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+
+  // Generate one idempotency key per checkout session — stable across re-renders,
+  // resets only when the user navigates away and comes back.
+  const idempotencyKeyRef = useRef(crypto.randomUUID());
 
   const subtotal = useMemo(() => (product ? product.price * form.quantity : 0), [form.quantity, product]);
   const normalizedVoucherCode = form.voucherCode.trim().toUpperCase();
@@ -92,6 +96,10 @@ export default function CheckoutPage() {
 
   async function handleSubmit(event) {
     event?.preventDefault?.();
+
+    // Prevent double-submit if already processing
+    if (submitting) return;
+
     setSubmitting(true);
     setError('');
     setMessage('');
@@ -106,6 +114,7 @@ export default function CheckoutPage() {
         quantity: form.quantity,
         shippingAddress: form.shippingAddress,
         voucherCode: form.voucherCode,
+        idempotencyKey: idempotencyKeyRef.current,
       });
 
       startTransition(() => {
@@ -118,7 +127,6 @@ export default function CheckoutPage() {
       });
     } catch (submissionError) {
       setError(submissionError.message);
-    } finally {
       setSubmitting(false);
     }
   }
@@ -322,6 +330,12 @@ export default function CheckoutPage() {
                 <span className="material-symbols-outlined text-base">shopping_cart_checkout</span>
                 {submitting ? 'Processing Checkout...' : 'Checkout Now'}
               </button>
+
+              {submitting && (
+                <p className="mt-3 text-center text-xs text-slate-500">
+                  Please wait — do not click again or refresh the page.
+                </p>
+              )}
             </article>
           </aside>
         </div>
