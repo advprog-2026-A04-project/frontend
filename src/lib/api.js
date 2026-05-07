@@ -274,9 +274,16 @@ export const api = {
   getOrder(orderId) {
     return request('order', `/orders/${orderId}`);
   },
-  checkout({ productId, quantity, shippingAddress, voucherCode }) {
+  checkout({ productId, quantity, shippingAddress, voucherCode, idempotencyKey }) {
+    const headers = {};
+    
+    if (idempotencyKey) {
+      headers['Idempotency-Key'] = idempotencyKey;
+    }
+
     return request('order', '/orders/checkout', {
       method: 'POST',
+      headers,
       body: {
         address: shippingAddress,
         voucherCode: voucherCode?.trim() || null,
