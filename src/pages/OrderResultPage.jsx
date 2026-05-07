@@ -4,7 +4,7 @@ import LoadingState from '../components/LoadingState';
 import PageShell from '../components/PageShell';
 import { useSession } from '../context/SessionContext';
 import { api } from '../lib/api';
-import { canRateOrder, formatCurrency, formatDate, statusLabel } from '../lib/format';
+import { canCancelOrder, canRateOrder, formatCurrency, formatDate, statusLabel } from '../lib/format';
 
 const TIMELINE = ['PAID', 'PURCHASED', 'SHIPPED', 'COMPLETED'];
 
@@ -18,6 +18,7 @@ export default function OrderResultPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [cancelling, setCancelling] = useState(false);
   const [ratingForm, setRatingForm] = useState({
     productRating: 5,
     jastiperRating: 5,
@@ -56,6 +57,29 @@ export default function OrderResultPage() {
     return currentIndex + 1;
   }, [order]);
 
+  const canCancel = user && canCancelOrder(order?.status) &&
+    (user.role === 'JASTIPER' || user.role === 'ADMIN');
+
+  async function handleCancel() {
+    if (!window.confirm('Cancel this order? Wallet will be refunded automatically if the order was paid.')) {
+      return;
+    }
+
+    setCancelling(true);
+    setError('');
+    setMessage('');
+
+    try {
+      const updated = await api.cancelOrder(orderId);
+      setOrder(updated);
+      setMessage('Order has been cancelled. Wallet refund has been processed.');
+    } catch (cancelError) {
+      setError(cancelError.message);
+    } finally {
+      setCancelling(false);
+    }
+  }
+
   async function handleRatingSubmit(event) {
     event.preventDefault();
     setSubmittingRating(true);
@@ -69,7 +93,7 @@ export default function OrderResultPage() {
         comment: ratingForm.comment,
       });
       setOrder(updatedOrder);
-      setMessage('Rating submitted.');
+      setMessage('Rating submitted successfully.');
     } catch (submissionError) {
       setError(submissionError.message);
     } finally {
@@ -81,7 +105,7 @@ export default function OrderResultPage() {
     return <LoadingState label="Loading order detail..." />;
   }
 
-  if (error || !order) {
+  if (error && !order) {
     return (
       <PageShell active="orders">
         <div className="rounded-[22px] border border-rose-400/20 bg-rose-500/10 p-6 text-rose-200">{error || 'Order not found.'}</div>
@@ -105,6 +129,7 @@ export default function OrderResultPage() {
         )}
 
         {message && <div className="rounded-[22px] border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm text-emerald-200">{message}</div>}
+        {error && <div className="rounded-[22px] border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200">{error}</div>}
 
         <article className="card--hero overflow-hidden rounded-[32px] border border-white/10 bg-[#13112A]/80 p-8 shadow-[0_0_36px_rgba(0,240,255,0.08)]">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
@@ -115,7 +140,9 @@ export default function OrderResultPage() {
                     ? 'border border-emerald-400/30 bg-emerald-500/10 text-emerald-300'
                     : order.status === 'CANCELLED'
                       ? 'border border-rose-400/30 bg-rose-500/10 text-rose-300'
-                      : 'border border-cyan/20 bg-cyan/10 text-cyan'
+                      : order.status === 'FAILED'
+                        ? 'border border-orange-400/30 bg-orange-500/10 text-orange-300'
+                        : 'border border-cyan/20 bg-cyan/10 text-cyan'
                 }`}>
                   {statusLabel(order)}
                 </span>
@@ -143,8 +170,8 @@ export default function OrderResultPage() {
               <p className="mt-2 text-sm font-bold text-white">{formatDate(order.createdAt)}</p>
             </div>
             <div className="rounded-[22px] border border-white/10 bg-white/5 p-5">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Updated</p>
-              <p className="mt-2 text-sm font-bold text-white">{formatDate(order.updatedAt)}</p>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Last Updated</p>
+              <p className="mt-2 text-sm font-bold text-white">{formatDate(order.updatedAt || order.createdAt)}</p>
             </div>
             <div className="rounded-[22px] border border-white/10 bg-white/5 p-5">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Voucher</p>
@@ -156,27 +183,31 @@ export default function OrderResultPage() {
             </div>
           </div>
 
-          <div className="mt-8 space-y-3">
-            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
-              {TIMELINE.map((step, index) => (
-                <span key={step} className={index < completedSteps ? 'text-cyan' : ''}>
-                  {statusLabel(step)}
-                </span>
-              ))}
+          {order.status !== 'CANCELLED' && order.status !== 'FAILED' && (
+            <div className="mt-8 space-y-3">
+              <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                {TIMELINE.map((step, index) => (
+                  <span key={step} className={index < completedSteps ? 'text-cyan' : ''}>
+                    {statusLabel(step)}
+                  </span>
+                ))}
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-cyan to-blue-500 transition-all duration-500"
+                  style={{ width: `${(completedSteps / TIMELINE.length) * 100}%` }}
+                />
+              </div>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-cyan to-blue-500 transition-all duration-500"
-                style={{ width: `${(completedSteps / TIMELINE.length) * 100}%` }}
-              />
-            </div>
-          </div>
+          )}
 
           {order.refundDone && (
             <div className="mt-6 rounded-[20px] border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm text-emerald-200">
-              Refund has already been recorded for this order.
+              <span className="material-symbols-outlined mr-2 align-middle text-base">check_circle</span>
+              Refund has been processed and returned to the buyer&apos;s wallet.
             </div>
           )}
+
           {order.failureReason && (
             <div className="mt-6 rounded-[20px] border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200">
               {order.failureReason}
@@ -244,6 +275,18 @@ export default function OrderResultPage() {
                   <span className="material-symbols-outlined text-base">account_balance_wallet</span>
                   Open Wallet
                 </Link>
+
+                {canCancel && (
+                  <button
+                    className="inline-flex items-center gap-2 rounded-full border border-rose-400/30 bg-rose-500/10 px-5 py-3 text-sm font-bold uppercase tracking-[0.18em] text-rose-300 transition-colors hover:border-rose-400/50 hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={cancelling}
+                    onClick={handleCancel}
+                    type="button"
+                  >
+                    <span className="material-symbols-outlined text-base">cancel</span>
+                    {cancelling ? 'Cancelling...' : 'Cancel Order'}
+                  </button>
+                )}
               </div>
             </article>
 
@@ -279,7 +322,7 @@ export default function OrderResultPage() {
             <form className="space-y-5" onSubmit={handleRatingSubmit}>
               <div className="grid gap-5 md:grid-cols-2">
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-bold text-white">Product rating</span>
+                  <span className="text-sm font-bold text-white">Product rating (1–5)</span>
                   <input
                     className="rounded-[20px] border border-white/10 bg-[#13112A]/75 px-5 py-4 text-white outline-none"
                     max={5}
@@ -292,7 +335,7 @@ export default function OrderResultPage() {
                   />
                 </label>
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-bold text-white">Jastiper rating</span>
+                  <span className="text-sm font-bold text-white">Jastiper rating (1–5)</span>
                   <input
                     className="rounded-[20px] border border-white/10 bg-[#13112A]/75 px-5 py-4 text-white outline-none"
                     max={5}
@@ -307,15 +350,13 @@ export default function OrderResultPage() {
               </div>
 
               <label className="flex flex-col gap-2">
-                <span className="text-sm font-bold text-white">Comment</span>
+                <span className="text-sm font-bold text-white">Comment (optional)</span>
                 <textarea
                   className="min-h-28 rounded-[20px] border border-white/10 bg-[#13112A]/75 px-5 py-4 text-white outline-none"
                   value={ratingForm.comment}
                   onChange={(event) => setRatingForm((current) => ({ ...current, comment: event.target.value }))}
                 />
               </label>
-
-              {error && <div className="rounded-[20px] border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200">{error}</div>}
 
               <button
                 className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-fuchsia-500 to-pink-500 px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-white shadow-[0_0_22px_rgba(217,0,255,0.32)] disabled:cursor-not-allowed disabled:opacity-50"
