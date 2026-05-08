@@ -2,41 +2,74 @@ const JSON_HEADERS = {
   'Content-Type': 'application/json',
 };
 
+const DEPLOYED_SERVICE_URLS = {
+  auth: 'https://auth-profile-api-osvihgaoya-uc.a.run.app',
+  inventory: 'https://inventory-api-osvihgaoya-uc.a.run.app',
+  wallet: 'https://wallet-api-osvihgaoya-uc.a.run.app',
+  order: 'https://order-api-osvihgaoya-uc.a.run.app',
+  voucher: 'https://voucher-promo-api-osvihgaoya-uc.a.run.app',
+};
+
+const LOCAL_SERVICE_URLS = {
+  auth: 'http://localhost:8081',
+  inventory: 'http://localhost:8082',
+  wallet: 'http://localhost:8083',
+  order: 'http://localhost:8084',
+  voucher: 'http://localhost:8085',
+};
+
+function isLocalBrowserOrigin() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const hostname = window.location.hostname;
+  return hostname === 'localhost' || hostname === '127.0.0.1';
+}
+
+function resolveDefaultBaseUrl(serviceKey, envValue) {
+  if (envValue) {
+    return envValue;
+  }
+
+  return isLocalBrowserOrigin() ? LOCAL_SERVICE_URLS[serviceKey] : DEPLOYED_SERVICE_URLS[serviceKey];
+}
+
 const SERVICE_DEFINITIONS = [
   {
     key: 'auth',
     name: 'Auth/Profile',
-    baseUrl: import.meta.env.VITE_AUTH_BASE_URL || 'http://localhost:8081',
+    baseUrl: resolveDefaultBaseUrl('auth', import.meta.env.VITE_AUTH_BASE_URL),
     healthPath: '/actuator/health',
     note: 'Register, login, and bearer-token session lookup.',
   },
   {
     key: 'inventory',
     name: 'Inventory',
-    baseUrl: import.meta.env.VITE_INVENTORY_BASE_URL || 'http://localhost:8082',
+    baseUrl: resolveDefaultBaseUrl('inventory', import.meta.env.VITE_INVENTORY_BASE_URL),
     healthPath: '/actuator/health',
     note: 'Browse products and validate stock before payment.',
   },
   {
     key: 'wallet',
     name: 'Wallet',
-    baseUrl: import.meta.env.VITE_WALLET_BASE_URL || 'http://localhost:8083',
+    baseUrl: resolveDefaultBaseUrl('wallet', import.meta.env.VITE_WALLET_BASE_URL),
     healthPath: '/actuator/health',
-    note: 'Read balance, top up for demos, and deduct during checkout.',
+    note: 'Balance, top-up, transaction history, deduct, and refund.',
   },
   {
     key: 'order',
     name: 'Order',
-    baseUrl: import.meta.env.VITE_ORDER_BASE_URL || 'http://localhost:8084',
+    baseUrl: resolveDefaultBaseUrl('order', import.meta.env.VITE_ORDER_BASE_URL),
     healthPath: '/actuator/health',
-    note: 'Checkout orchestrator for milestone 50%.',
+    note: 'Checkout orchestration and order lifecycle.',
   },
   {
     key: 'voucher',
     name: 'Voucher/Promo',
-    baseUrl: import.meta.env.VITE_VOUCHER_BASE_URL || 'http://localhost:8085',
+    baseUrl: resolveDefaultBaseUrl('voucher', import.meta.env.VITE_VOUCHER_BASE_URL),
     healthPath: '/health',
-    note: 'Public voucher listing plus internal validation and claim by Order.',
+    note: 'Public voucher listing plus admin voucher management.',
   },
 ];
 
@@ -162,6 +195,16 @@ async function fetchHealth(definition) {
   }
 }
 
+function adminHeaders(adminToken) {
+  if (!adminToken || !String(adminToken).trim()) {
+    throw new Error('Admin voucher token is required.');
+  }
+
+  return {
+    'X-Admin-Token': String(adminToken).trim(),
+  };
+}
+
 export const api = {
   async getHealth() {
     const services = await Promise.all(SERVICE_DEFINITIONS.map(fetchHealth));
@@ -189,6 +232,12 @@ export const api = {
       body: { userId },
     });
   },
+  listWalletTransactions(userId) {
+    return request('wallet', '/wallet/transactions', {
+      method: 'POST',
+      body: { userId },
+    });
+  },
   async topUpWallet(userId, amount) {
     const topUpRequest = await request('wallet', '/wallet/topup', {
       method: 'POST',
@@ -199,20 +248,31 @@ export const api = {
       method: 'POST',
     });
 
-    const wallet = await this.getWallet(userId);
+    const [wallet, transactions] = await Promise.all([
+      this.getWallet(userId),
+      this.listWalletTransactions(userId),
+    ]);
+
     return {
-      ...wallet,
+      wallet,
+      transactions,
       requestId: topUpRequest.requestId,
     };
   },
   listOrders() {
     return request('order', '/orders/my');
   },
+  listActiveOrders() {
+    return request('order', '/orders/my/active');
+  },
+  listJastiperOrders() {
+    return request('order', '/orders/jastiper');
+  },
+  listAdminOrders() {
+    return request('order', '/orders/admin');
+  },
   getOrder(orderId) {
     return request('order', `/orders/${orderId}`);
-  },
-  listActiveVouchers() {
-    return request('voucher', '/vouchers/active', { token: '' });
   },
   checkout({ productId, quantity, shippingAddress, voucherCode }) {
     return request('order', '/orders/checkout', {
@@ -227,6 +287,56 @@ export const api = {
           },
         ],
       },
+    });
+  },
+  cancelOrder(orderId) {
+    return request('order', `/orders/${orderId}/cancel`, {
+      method: 'POST',
+    });
+  },
+  updateOrderStatus(orderId, nextStatus) {
+    return request('order', `/orders/${orderId}/status`, {
+      method: 'PATCH',
+      body: { nextStatus },
+    });
+  },
+  submitOrderRating(orderId, payload) {
+    return request('order', `/orders/${orderId}/rating`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+  listActiveVouchers() {
+    return request('voucher', '/vouchers/active', { token: '' });
+  },
+  listAdminVouchers(adminToken, status = '') {
+    const suffix = status ? `?status=${encodeURIComponent(status)}` : '';
+    return request('voucher', `/admin/vouchers${suffix}`, {
+      headers: adminHeaders(adminToken),
+      token: '',
+    });
+  },
+  createAdminVoucher(adminToken, payload) {
+    return request('voucher', '/admin/vouchers', {
+      method: 'POST',
+      body: payload,
+      headers: adminHeaders(adminToken),
+      token: '',
+    });
+  },
+  updateAdminVoucher(adminToken, voucherId, payload) {
+    return request('voucher', `/admin/vouchers/${voucherId}`, {
+      method: 'PUT',
+      body: payload,
+      headers: adminHeaders(adminToken),
+      token: '',
+    });
+  },
+  disableAdminVoucher(adminToken, voucherId) {
+    return request('voucher', `/admin/vouchers/${voucherId}/disable`, {
+      method: 'POST',
+      headers: adminHeaders(adminToken),
+      token: '',
     });
   },
 };

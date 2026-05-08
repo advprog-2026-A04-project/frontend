@@ -1,25 +1,102 @@
-# Frontend
+# Frontend Milestone 75
 
-React + Vite frontend for Milestone `25%` and `50%` only.
+Real frontend for JSON / JaStip Online Nasional Milestone `75%`.
 
-This app calls the real deployed microservices directly:
-- Auth/Profile
-- Inventory
-- Wallet
-- Order
-- Voucher/Promo
+## Frontend Source Decision
 
-It does not include Milestone `75%` or `100%` features.
+The current website UI follows the newer attached frontend source:
 
-## Deployed URL
+- `remix_-json-limited-drops (1).zip`
 
-- `https://advprog-frontend-m25-m50-383620816191.us-central1.run.app`
+The previous frontend implementation is still reused where it was already proven:
 
-Cloud Run also exposes the service at `https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app`. Backend CORS must allow both frontend origins.
+- centralized API integration in `src/lib/api.js`
+- route contracts and role guards
+- environment variables and deployment config
+- Selenium verification
+- backend compatibility for admin and jastiper operations
 
-## Required Environment Variables
+That split is intentional. The newer attached frontend wins for buyer-facing UI and layout. The previous frontend only supplies the data layer and operational flows that the newer UI did not include.
 
-Development defaults live in [.env.example](./.env.example).
+## Scope
+
+Implemented flows:
+
+- landing page
+- register and login
+- product browse and search
+- product detail
+- wallet balance, top-up, and transaction history
+- checkout with voucher code
+- buyer order history and active orders
+- order detail and rating after completion
+- jastiper lifecycle processing
+- admin voucher management
+- admin order monitoring
+
+Checkout orchestration remains in the Order service.
+
+## Runtime
+
+- React + Vite
+- static build served by `nginx`
+- direct browser calls to Auth, Inventory, Wallet, Order, and Voucher services
+
+## Local Setup
+
+Required runtime: Node `20.19.0+`.
+
+The repo pins that version in `.nvmrc`, and the production Dockerfile already uses `node:20.19-alpine`.
+
+1. Install the required Node runtime:
+
+```bash
+nvm install 20.19.0
+nvm use 20.19.0
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Copy local build variables if you want to override the built-in defaults:
+
+```bash
+cp .env.example .env
+```
+
+PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+4. Start the frontend:
+
+```bash
+npm run dev
+```
+
+Default URL behavior without a committed `.env.production`:
+
+- browser on `localhost` or `127.0.0.1`: uses local service defaults
+- deployed browser origin: uses the deployed Cloud Run service URLs baked into `src/lib/api.js`
+
+Local backend defaults expected by the Vite client:
+
+- auth: `http://localhost:8081`
+- inventory: `http://localhost:8082`
+- wallet: `http://localhost:8083`
+- order: `http://localhost:8084`
+- voucher: `http://localhost:8085`
+
+If local demo accounts are needed, start Auth with `APP_DEMO_SEED_ENABLED=true`.
+
+## Environment Variables
+
+Optional build-time Vite variables:
 
 - `VITE_AUTH_BASE_URL`
 - `VITE_INVENTORY_BASE_URL`
@@ -27,129 +104,60 @@ Development defaults live in [.env.example](./.env.example).
 - `VITE_ORDER_BASE_URL`
 - `VITE_VOUCHER_BASE_URL`
 
-Production build values live in [.env.production](./.env.production) and point to the deployed Cloud Run services.
+Leave these blank unless you intentionally want to override the built-in defaults.
 
-## Local Run
+Do not put private admin tokens or service secrets into the frontend build.
 
-Prerequisites:
-- Node.js `20.19+` recommended
+The admin page now requires manual voucher admin token input at runtime. Real admin tokens must stay in Cloud Run env or local shell env only. They must not be committed in `.env`, `.env.production`, or any `VITE_` variable.
 
-Commands:
+## Commands
 
 ```bash
-npm ci
 npm run dev
-```
-
-Development URL:
-- `http://localhost:5173`
-
-Local service ports expected by the frontend defaults:
-- Auth/Profile: `http://localhost:8081`
-- Inventory: `http://localhost:8082`
-- Wallet: `http://localhost:8083`
-- Order: `http://localhost:8084`
-- Voucher/Promo: `http://localhost:8085`
-
-For a local demo stack, run Voucher/Promo with `SPRING_PROFILES_ACTIVE=cloudrun` so `MILESTONE10` is seeded automatically.
-
-## Test and Build
-
-```bash
 npm run lint
 npm run test
 npm run build
 ```
 
-The automated frontend suite covers:
-- register flow
-- login and authenticated session hydration
-- product browsing
-- checkout with voucher input
-- successful order result flow
+## Deployment
 
-## Product Images
+Target platform: Google Cloud Run.
 
-Inventory does not currently expose product image URLs. The frontend therefore renders:
-- real remote images when a valid `imageUrl` exists
-- generated fallback artwork when `imageUrl` is missing or fails to load
+The production build does not rely on a committed `.env.production`. It uses either explicit `VITE_*` overrides or the deployed Cloud Run fallbacks in `src/lib/api.js`:
 
-This prevents broken image icons in the catalog and product detail pages while still using the real Inventory payload.
+- auth: `https://auth-profile-api-osvihgaoya-uc.a.run.app`
+- inventory: `https://inventory-api-osvihgaoya-uc.a.run.app`
+- wallet: `https://wallet-api-osvihgaoya-uc.a.run.app`
+- order: `https://order-api-osvihgaoya-uc.a.run.app`
+- voucher: `https://voucher-promo-api-osvihgaoya-uc.a.run.app`
 
-## Selenium Demo Script
-
-For a slow, visible walkthrough of the live deployed app:
+Basic deploy:
 
 ```bash
-python -m pip install --user -r requirements-selenium.txt
-python scripts/selenium_demo_flow.py --slow-seconds 6 --result-extra-seconds 10
+gcloud run deploy advprog-frontend-m25-m50 --source . --region us-central1 --allow-unauthenticated
 ```
 
-The script opens a real browser and walks through:
-- register
-- login
-- browse products
-- wallet top-up
-- checkout with `MILESTONE10`
-- order result
-- optional insufficient-balance failure flow
+## Selenium Verification
 
-Useful flags:
-- `--browser edge`
-- `--browser chrome`
-- `--no-show-failure-flow`
-- `--no-hold-open`
+Milestone 75 Selenium coverage lives in [verification/selenium-verifier](./verification/selenium-verifier).
 
-## Standalone Verifier
+It supports:
 
-A stricter evidence-producing verifier lives in [verification/selenium-verifier](./verification/selenium-verifier).
+- local stack verification
+- deployed Cloud Run verification
+- screenshot capture on failure
+- JSON run summaries
 
-It uses:
-- Selenium for the real frontend flow
-- direct API assertions for before/after state
-- a separate concurrency runner for Inventory, Wallet, and Voucher
+See the verifier README for the required environment variables and commands.
 
-Quick start:
+## Evidence
 
-```bash
-cd verification/selenium-verifier
-python -m venv .venv
-.venv\Scripts\activate
-python -m pip install -r requirements.txt
-copy .env.example .env
-pytest tests/test_live_verification.py -m live -s --html=verification-artifacts\live-report.html --self-contained-html
-python scripts/run_concurrency.py
-```
+Deployment and verification notes are tracked in:
 
-The verifier writes screenshots, raw API evidence, and run summaries under `verification-artifacts/`.
+- [MILESTONE_75_DEPLOYMENT_VERIFICATION.md](./MILESTONE_75_DEPLOYMENT_VERIFICATION.md)
 
-A curated committed evidence snapshot from a live deployed run is available under [verification/selenium-verifier/evidence/live-20260415](./verification/selenium-verifier/evidence/live-20260415).
+## Risks
 
-## Cloud Run Deploy
-
-```bash
-gcloud run deploy advprog-frontend-m25-m50 --source . --region us-central1 --allow-unauthenticated --max-instances=1
-```
-
-Health check path:
-- `GET /status`
-
-## Manual QA Checklist
-
-- Open `/` and confirm service health cards load.
-- Open `/status` and confirm the frontend returns `ok`.
-- Register a new buyer account.
-- Log in with the new account.
-- Open `/products` and browse the catalog.
-- Open a product detail page.
-- Open `/wallet`, top up balance, and confirm the balance changes.
-- Open `/checkout`, enter `MILESTONE10`, and confirm the voucher field is present.
-- Complete checkout and confirm the result page shows a paid order.
-- Open `/orders` and confirm the order is listed.
-- Retry checkout with insufficient balance and confirm the UI surfaces the failure.
-
-## Limitations
-
-- The frontend is intentionally scoped to Milestone `25%` and `50%`.
-- Service-local storage is used for the demo stack, so data is not durable across Cloud Run instance restarts.
-- Voucher validation preview is estimated from the public active-voucher list; final validation and quota claim happen inside the Order service.
+- Voucher admin tokens must stay out of frontend source and committed env files.
+- The frontend assumes backend CORS allows the deployed frontend origin.
+- The public Cloud Run demo may intentionally enable demo Auth seeding through `APP_DEMO_SEED_ENABLED=true`, but that is a demo-only deployment decision and should remain disabled by default elsewhere.

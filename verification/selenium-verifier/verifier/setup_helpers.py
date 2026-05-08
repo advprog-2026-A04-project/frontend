@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import asdict
 from datetime import datetime, timedelta
 from decimal import Decimal
-from secrets import token_hex
 from typing import Any
 
 from .models import CheckoutState, ProductInfo, TestUser, VoucherInfo
@@ -16,11 +15,31 @@ class SetupHelper:
         self.services = services
 
     def new_user(self, prefix: str) -> TestUser:
-        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
-        suffix = token_hex(3)
-        username = f"{prefix}{timestamp}{suffix}"
-        email = f"{prefix}-{timestamp}-{suffix}@json.app"
-        return TestUser(email=email, username=username, password="Audit123!")
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
+        email = f"{prefix}-{timestamp}@json.app"
+        return TestUser(email=email, username=f"{prefix}{timestamp}", password="Audit123!")
+
+    def login_existing_user_api(
+        self,
+        email: str,
+        password: str,
+        evidence=None,
+        evidence_name: str | None = None,
+    ) -> TestUser:
+        response = self.services.auth.login(
+            email,
+            password,
+            evidence=evidence,
+            evidence_name=evidence_name,
+        )
+        payload = response.payload
+        return TestUser(
+            email=payload["email"],
+            username=payload["username"],
+            password=password,
+            user_id=int(payload["id"]),
+            token=payload["token"],
+        )
 
     def register_user_api(self, user: TestUser, evidence=None, evidence_name: str | None = None) -> TestUser:
         response = self.services.auth.register(
@@ -55,7 +74,14 @@ class SetupHelper:
             token=payload["token"],
         )
 
-    def choose_product(self, token: str, evidence=None, evidence_name: str | None = None) -> ProductInfo:
+    def choose_product(
+        self,
+        token: str,
+        preferred_jastiper_id: int | str | None = None,
+        excluded_product_ids: set[str] | None = None,
+        evidence=None,
+        evidence_name: str | None = None,
+    ) -> ProductInfo:
         if self.settings.default_product_id:
             response = self.services.inventory.get_product(
                 token,
@@ -69,8 +95,11 @@ class SetupHelper:
                 name=payload["name"],
                 price=Decimal(str(payload["price"])),
                 stock=int(payload["stock"]),
+                jastiper_id=payload.get("jastiperId"),
                 raw=payload,
             )
+
+        excluded = excluded_product_ids or set()
 
         response = self.services.inventory.search(
             token,
@@ -81,12 +110,37 @@ class SetupHelper:
         if not products:
             raise AssertionError("Inventory search returned no products.")
 
-        viable = next((item for item in products if int(item["stock"]) >= 2), products[0])
+        preferred = str(preferred_jastiper_id) if preferred_jastiper_id is not None else None
+        available_products = [item for item in products if str(item["id"]) not in excluded]
+        sorted_products = sorted(available_products, key=lambda item: int(item.get("stock") or 0), reverse=True)
+        if not sorted_products:
+            raise AssertionError("Inventory search returned no products outside the excluded product set.")
+
+        viable = None
+        if preferred:
+            viable = next(
+                (
+                    item
+                    for item in sorted_products
+                    if str(item.get("jastiperId") or "") == preferred and int(item["stock"]) >= 1
+                ),
+                None,
+            )
+
+        if viable is None:
+            viable = next((item for item in sorted_products if int(item["stock"]) >= 1), None)
+
+        if viable is None:
+            raise AssertionError(
+                "Inventory search returned no in-stock products. Reset the local demo state or use a fresh deployment."
+            )
+
         return ProductInfo(
             product_id=viable["id"],
             name=viable["name"],
             price=Decimal(str(viable["price"])),
             stock=int(viable["stock"]),
+            jastiper_id=viable.get("jastiperId"),
             raw=viable,
         )
 

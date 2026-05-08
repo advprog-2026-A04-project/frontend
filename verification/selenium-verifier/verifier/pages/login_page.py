@@ -9,12 +9,32 @@ from .base_page import BasePage
 class LoginPage(BasePage):
     def load(self) -> None:
         self.open("/login")
-        self.wait_for_text("Log in to continue")
+        self.wait_for_text("Log in")
+        self.pause_checkpoint("login_loaded")
 
     def login(self, email: str, password: str) -> None:
         self.fill_css("input[type='email']", email)
         self.fill_css("input[type='password']", password)
-        self.click_xpath("//button[normalize-space()='Log in']")
+        self.click_xpath("//button[contains(normalize-space(), 'Log In')]")
 
     def wait_for_success(self) -> None:
-        self.wait.until(EC.visibility_of_element_located((By.XPATH, "//*[contains(normalize-space(), 'Browse demo-ready products')]")))
+        self.wait.until(EC.visibility_of_element_located((By.XPATH, "//*[contains(normalize-space(), 'Browse the newest limited drops.')]")))
+        self.pause_checkpoint("login_success")
+
+    def email_value(self) -> str:
+        return self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "input[type='email']"))).get_attribute("value")
+
+    def flash_text(self) -> str:
+        return self.wait.until(
+            EC.visibility_of_element_located((By.XPATH, "//*[contains(normalize-space(), 'Registration successful')]"))
+        ).text
+
+    def error_text(self) -> str:
+        return self.wait.until(
+            EC.visibility_of_element_located((By.XPATH, "//*[contains(@class,'rose-200') or contains(@class,'notice--danger')]"))
+        ).text
+
+    def wait_for_error(self) -> str:
+        message = self.error_text()
+        self.pause_checkpoint("login_error_visible")
+        return message

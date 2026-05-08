@@ -10,15 +10,16 @@ from .base_page import BasePage
 
 class ProductDetailPage(BasePage):
     def wait_loaded(self) -> None:
-        self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".detail-media img")))
+        self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".detail-layout")))
         self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".detail-copy h1")))
+        self.pause_checkpoint("product_detail_loaded")
 
     def product_name(self) -> str:
         return self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".detail-copy h1"))).text
 
     def price_text(self) -> str:
         return self.wait.until(
-            EC.visibility_of_element_located((By.XPATH, "//div[contains(@class,'metric-card')][.//span[normalize-space()='Price']]//strong"))
+            EC.visibility_of_element_located((By.XPATH, "//*[normalize-space()='Price']/following-sibling::*[1]"))
         ).text
 
     def stock_text(self) -> str:
@@ -33,4 +34,4 @@ class ProductDetailPage(BasePage):
         self.fill_css("input[type='number']", str(quantity))
 
     def click_buy_now(self) -> None:
-        self.click_xpath("//button[normalize-space()='Buy now']")
+        self.click_xpath("//button[contains(normalize-space(), 'Checkout Now')]")

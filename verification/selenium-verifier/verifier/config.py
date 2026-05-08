@@ -38,10 +38,20 @@ class Settings:
     wallet_base_url: str
     order_base_url: str
     voucher_base_url: str
+    buyer_email: str | None
+    buyer_password: str | None
+    jastiper_email: str | None
+    jastiper_password: str | None
+    admin_email: str | None
+    admin_password: str | None
     voucher_admin_token: str | None
     internal_api_token: str | None
     browser: str
     headless: bool
+    pause_on_enter: bool
+    pause_after_scenario: bool
+    pause_on_failure: bool
+    slow_mo_ms: int
     default_topup_amount: int
     default_product_id: str | None
     default_voucher_code: str | None
@@ -66,32 +76,42 @@ def load_settings() -> Settings:
     return Settings(
         frontend_base_url=_env(
             "FRONTEND_BASE_URL",
-            "https://advprog-frontend-m25-m50-383620816191.us-central1.run.app",
+            "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app",
         ),
         auth_base_url=_env(
             "AUTH_BASE_URL",
-            "https://auth-profile-api-383620816191.us-central1.run.app",
+            "https://auth-profile-api-osvihgaoya-uc.a.run.app",
         ),
         inventory_base_url=_env(
             "INVENTORY_BASE_URL",
-            "https://inventory-api-383620816191.us-central1.run.app",
+            "https://inventory-api-osvihgaoya-uc.a.run.app",
         ),
         wallet_base_url=_env(
             "WALLET_BASE_URL",
-            "https://wallet-api-383620816191.us-central1.run.app",
+            "https://wallet-api-osvihgaoya-uc.a.run.app",
         ),
         order_base_url=_env(
             "ORDER_BASE_URL",
-            "https://order-api-383620816191.us-central1.run.app",
+            "https://order-api-osvihgaoya-uc.a.run.app",
         ),
         voucher_base_url=_env(
             "VOUCHER_BASE_URL",
-            "https://voucher-promo-api-383620816191.us-central1.run.app",
+            "https://voucher-promo-api-osvihgaoya-uc.a.run.app",
         ),
+        buyer_email=_env("BUYER_EMAIL", "demo@json.app"),
+        buyer_password=_env("BUYER_PASSWORD", "Demo123!"),
+        jastiper_email=_env("JASTIPER_EMAIL", "jastiper3@json.app"),
+        jastiper_password=_env("JASTIPER_PASSWORD", "Demo123!"),
+        admin_email=_env("ADMIN_EMAIL", "admin@json.app"),
+        admin_password=_env("ADMIN_PASSWORD", "Demo123!"),
         voucher_admin_token=_env("VOUCHER_ADMIN_TOKEN"),
         internal_api_token=_env("INTERNAL_API_TOKEN"),
         browser=_env("BROWSER", "edge"),
         headless=_env_bool("HEADLESS", False),
+        pause_on_enter=_env_bool("PAUSE_ON_ENTER", False),
+        pause_after_scenario=_env_bool("PAUSE_AFTER_SCENARIO", False),
+        pause_on_failure=_env_bool("PAUSE_ON_FAILURE", False),
+        slow_mo_ms=_env_int("SLOW_MO_MS", 0),
         default_topup_amount=_env_int("DEFAULT_TOPUP_AMOUNT", 1_000_000),
         default_product_id=_env("DEFAULT_PRODUCT_ID"),
         default_voucher_code=_env("DEFAULT_VOUCHER_CODE", "MILESTONE10"),

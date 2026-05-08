@@ -30,6 +30,17 @@ class WalletClient(BaseApiClient):
             **kwargs,
         )
 
+    def list_transactions(self, user_id: int, token: str | None = None, internal_token: str | None = None, **kwargs):
+        headers = self._auth_headers(token, internal_token)
+        return self.request(
+            "POST",
+            "/wallet/transactions",
+            headers=headers,
+            json_body={"userId": user_id},
+            expected_status=200,
+            **kwargs,
+        )
+
     def mark_top_up_success(self, request_id: int, token: str | None = None, internal_token: str | None = None, **kwargs):
         return self.request(
             "POST",

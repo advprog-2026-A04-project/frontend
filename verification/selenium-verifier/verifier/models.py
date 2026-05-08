@@ -30,6 +30,7 @@ class ProductInfo:
     name: str
     price: Decimal
     stock: int
+    jastiper_id: str | None
     raw: dict[str, Any]
 
 
