@@ -396,6 +396,71 @@ def test_milestone25_register_login_browse_profile_and_alias_routes(
 
 
 @pytest.mark.live
+@pytest.mark.edge
+def test_profile_update_persists_in_ui_and_auth_service(
+    setup_helper,
+    services,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "profile_update_persists_in_ui_and_auth_service"
+    details = {}
+
+    try:
+        buyer = setup_helper.register_user_api(
+            setup_helper.new_user("profile-update"),
+            evidence=scenario_artifacts,
+            evidence_name="profile_update_register",
+        )
+        new_username = f"{buyer.username}-refined"
+        new_full_name = "Profile Update Buyer"
+
+        ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "profile_update_login")
+        pages.profile.load()
+        pages.profile.update_profile(new_username, new_full_name)
+        pages.profile.wait_for_notice("Profile updated successfully.")
+        scenario_artifacts.save_screenshot("profile_updated.png", pages.driver)
+
+        assert pages.profile.heading_text() == new_full_name
+        assert f"@{new_username}" in pages.profile.identity_text()
+
+        api_profile = services.auth.me(
+            browser_token(pages.driver),
+            evidence=scenario_artifacts,
+            evidence_name="profile_update_me",
+        ).payload
+        assert api_profile["username"] == new_username
+        assert api_profile["fullName"] == new_full_name
+
+        pages.profile.refresh()
+        pages.profile.wait_for_notice("Save Profile")
+        refreshed_session = browser_user(pages.driver)
+        assert refreshed_session is not None
+        assert refreshed_session["username"] == new_username
+        assert refreshed_session["fullName"] == new_full_name
+        scenario_artifacts.save_screenshot("profile_updated_after_refresh.png", pages.driver)
+
+        details.update(
+            {
+                "buyer_id": buyer.user_id,
+                "updated_username": new_username,
+                "updated_full_name": new_full_name,
+                "api_profile": api_profile,
+                "browser_session": refreshed_session,
+            }
+        )
+        scenario_artifacts.write_json("details.json", details)
+        artifact_manager.record_scenario(scenario, VERIFIED, details)
+    except Exception as error:  # noqa: BLE001
+        scenario_artifacts.save_screenshot("failure.png", pages.driver)
+        details["error"] = str(error)
+        scenario_artifacts.write_json("failure.json", details)
+        artifact_manager.record_scenario(scenario, FAILED, details)
+        raise
+
+
+@pytest.mark.live
 def test_route_guards_search_filters_and_role_navigation(
     settings,
     pages,

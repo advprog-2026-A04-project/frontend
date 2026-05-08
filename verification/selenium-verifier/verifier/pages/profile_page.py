@@ -28,6 +28,31 @@ class ProfilePage(BasePage):
             )
         ).text
 
+    def identity_text(self) -> str:
+        return self.wait.until(
+            EC.visibility_of_element_located((By.XPATH, "//article[.//p[normalize-space()='Profile']]//p[contains(normalize-space(), '@')]"))
+        ).text
+
+    def set_username(self, username: str) -> None:
+        self.fill_xpath("//label[.//span[normalize-space()='Username']]//input", username)
+
+    def set_full_name(self, full_name: str) -> None:
+        self.fill_xpath("//label[.//span[normalize-space()='Full name']]//input", full_name)
+
+    def save_profile(self) -> None:
+        self.pause_checkpoint("profile_ready_to_save")
+        self.click_xpath("//button[contains(normalize-space(), 'Save Profile')]")
+
+    def wait_for_notice(self, text: str) -> str:
+        notice = self.wait.until(EC.visibility_of_element_located((By.XPATH, f"//*[contains(normalize-space(), \"{text}\")]")))
+        self.pause_checkpoint("profile_notice_visible")
+        return notice.text
+
+    def update_profile(self, username: str, full_name: str) -> None:
+        self.set_username(username)
+        self.set_full_name(full_name)
+        self.save_profile()
+
     def has_card(self, title: str) -> bool:
         elements = self.driver.find_elements(
             By.XPATH,

@@ -219,6 +219,12 @@ export const api = {
   getCurrentUser(token) {
     return request('auth', '/auth/me', { token });
   },
+  updateProfile(payload) {
+    return request('auth', '/profile', {
+      method: 'PUT',
+      body: payload,
+    });
+  },
   listProducts(query = '') {
     const suffix = query ? `?keyword=${encodeURIComponent(query)}` : '';
     return request('inventory', `/api/products/search${suffix}`);

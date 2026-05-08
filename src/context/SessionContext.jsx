@@ -78,6 +78,21 @@ export function SessionProvider({ children }) {
     };
   }
 
+  async function updateProfile(payload) {
+    const profile = await api.updateProfile(payload);
+    const nextUser = {
+      id: profile.id,
+      email: profile.email,
+      username: profile.username,
+      fullName: profile.fullName,
+      role: profile.role,
+    };
+
+    setUser(nextUser);
+    persistSession(token, nextUser);
+    return nextUser;
+  }
+
   async function logout() {
     setToken('');
     setUser(null);
@@ -94,6 +109,7 @@ export function SessionProvider({ children }) {
         isAuthenticated: Boolean(user && token),
         login,
         register,
+        updateProfile,
         logout,
       }}
     >

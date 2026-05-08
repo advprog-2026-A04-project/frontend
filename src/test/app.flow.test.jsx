@@ -208,4 +208,64 @@ describe('frontend milestone flow', () => {
       );
     });
   });
+
+  it('updates the profile and keeps the refreshed session in local storage', async () => {
+    window.history.pushState({}, '', '/profile');
+    localStorage.setItem('json.sessionToken', 'session-2');
+    localStorage.setItem(
+      'json.sessionUser',
+      JSON.stringify({
+        id: 1000,
+        email: 'demo@json.app',
+        username: 'Demo Buyer',
+        fullName: 'Demo Buyer',
+        role: 'TITIPER',
+      }),
+    );
+
+    installFetchMock({
+      'GET /auth/me': {
+        body: {
+          id: 1000,
+          email: 'demo@json.app',
+          username: 'Demo Buyer',
+          fullName: 'Demo Buyer',
+          role: 'TITIPER',
+        },
+      },
+      'PUT /profile': ({ body }) => {
+        expect(body).toEqual({
+          username: 'demo-refined',
+          fullName: 'Demo Buyer Refined',
+        });
+        return {
+          body: {
+            id: 1000,
+            email: 'demo@json.app',
+            username: 'demo-refined',
+            fullName: 'Demo Buyer Refined',
+            role: 'TITIPER',
+          },
+        };
+      },
+    });
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Demo Buyer' })).toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText(/username/i));
+    await user.type(screen.getByLabelText(/username/i), 'demo-refined');
+    await user.clear(screen.getByLabelText(/full name/i));
+    await user.type(screen.getByLabelText(/full name/i), 'Demo Buyer Refined');
+    await user.click(screen.getByRole('button', { name: /save profile/i }));
+
+    expect(await screen.findByText(/profile updated successfully/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Demo Buyer Refined' })).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem('json.sessionUser'))).toMatchObject({
+      username: 'demo-refined',
+      fullName: 'Demo Buyer Refined',
+    });
+  });
 });
