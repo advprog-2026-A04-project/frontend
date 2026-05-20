@@ -6,6 +6,8 @@ import { api } from '../lib/api';
 
 export default function CatalogPage() {
   const [query, setQuery] = useState('');
+  const [jastiperId, setJastiperId] = useState('');
+  const [searchMode, setSearchMode] = useState('product');
   const [activeCategory, setActiveCategory] = useState('All');
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,9 +22,12 @@ export default function CatalogPage() {
       setError('');
 
       try {
-        const data = await api.listProducts(deferredQuery);
+        const data = searchMode === 'jastiper' && jastiperId.trim()
+          ? await api.listProductsByJastiper(jastiperId.trim())
+          : await api.listProducts(deferredQuery);
         if (!cancelled) {
           setProducts(data);
+          setActiveCategory('All');
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -40,7 +45,7 @@ export default function CatalogPage() {
     return () => {
       cancelled = true;
     };
-  }, [deferredQuery]);
+  }, [deferredQuery, jastiperId, searchMode]);
 
   const categories = useMemo(() => {
     const values = new Set(
@@ -78,18 +83,49 @@ export default function CatalogPage() {
               </p>
             </div>
 
-            <label className="flex flex-col gap-2">
-              <span className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Search</span>
-              <div className="flex items-center gap-3 rounded-[20px] border border-white/10 bg-white/5 px-5 py-4 backdrop-blur-md">
-                <span className="material-symbols-outlined text-cyan">search</span>
-                <input
-                  className="w-full bg-transparent text-base text-white outline-none placeholder:text-slate-500"
-                  placeholder="Search limited items, categories, or origin..."
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                />
+            <div className="space-y-4">
+              <div className="flex rounded-[20px] border border-white/10 bg-white/5 p-1">
+                {['product', 'jastiper'].map((mode) => (
+                  <button
+                    key={mode}
+                    className={`flex-1 rounded-[16px] px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] ${
+                      searchMode === mode ? 'bg-cyan text-[#0B0914]' : 'text-slate-300'
+                    }`}
+                    onClick={() => setSearchMode(mode)}
+                    type="button"
+                  >
+                    {mode === 'product' ? 'Product' : 'Jastiper'}
+                  </button>
+                ))}
               </div>
-            </label>
+              {searchMode === 'product' ? (
+                <label className="flex flex-col gap-2">
+                  <span className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Product Search</span>
+                  <div className="flex items-center gap-3 rounded-[20px] border border-white/10 bg-white/5 px-5 py-4 backdrop-blur-md">
+                    <span className="material-symbols-outlined text-cyan">search</span>
+                    <input
+                      className="w-full bg-transparent text-base text-white outline-none placeholder:text-slate-500"
+                      placeholder="Search limited items..."
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                    />
+                  </div>
+                </label>
+              ) : (
+                <label className="flex flex-col gap-2">
+                  <span className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Jastiper ID</span>
+                  <div className="flex items-center gap-3 rounded-[20px] border border-white/10 bg-white/5 px-5 py-4 backdrop-blur-md">
+                    <span className="material-symbols-outlined text-cyan">person_search</span>
+                    <input
+                      className="w-full bg-transparent text-base text-white outline-none placeholder:text-slate-500"
+                      placeholder="Browse products from a Jastiper..."
+                      value={jastiperId}
+                      onChange={(event) => setJastiperId(event.target.value)}
+                    />
+                  </div>
+                </label>
+              )}
+            </div>
           </div>
         </article>
 

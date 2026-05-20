@@ -124,8 +124,12 @@ export default function ProductDetailPage() {
                   <p className="mt-2 text-3xl font-black text-cyan">{formatCurrency(product.price)}</p>
                 </div>
                 <div className="rounded-[22px] border border-white/10 bg-[#13112A]/75 p-5">
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Buyer Window</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Purchase Date</p>
                   <p className="mt-2 text-lg font-bold text-white">{formatDate(product.purchaseDate)}</p>
+                </div>
+                <div className="rounded-[22px] border border-white/10 bg-[#13112A]/75 p-5">
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Return Date</p>
+                  <p className="mt-2 text-lg font-bold text-white">{formatDate(product.returnDate)}</p>
                 </div>
                 <div className="rounded-[22px] border border-white/10 bg-[#13112A]/75 p-5">
                   <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Origin</p>
