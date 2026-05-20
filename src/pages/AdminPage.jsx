@@ -14,6 +14,16 @@ const EMPTY_VOUCHER_FORM = {
   endAt: '',
 };
 
+const EMPTY_PRODUCT_FORM = {
+  name: '',
+  description: '',
+  price: 100000,
+  stock: 0,
+  originLocation: '',
+  purchaseDate: '',
+  returnDate: '',
+};
+
 function toLocalDateTimeInput(offsetDays = 0) {
   const value = new Date(Date.now() + offsetDays * 24 * 60 * 60 * 1000);
   const pad = (number) => String(number).padStart(2, '0');
@@ -24,12 +34,15 @@ export default function AdminPage() {
   const [adminToken, setAdminToken] = useState('');
   const [orders, setOrders] = useState([]);
   const [vouchers, setVouchers] = useState([]);
+  const [products, setProducts] = useState([]);
   const [voucherForm, setVoucherForm] = useState({
     ...EMPTY_VOUCHER_FORM,
     startAt: toLocalDateTimeInput(-1),
     endAt: toLocalDateTimeInput(7),
   });
   const [editingVoucherId, setEditingVoucherId] = useState(null);
+  const [productForm, setProductForm] = useState(EMPTY_PRODUCT_FORM);
+  const [editingProductId, setEditingProductId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -41,9 +54,11 @@ export default function AdminPage() {
 
     try {
       const orderPromise = api.listAdminOrders();
+      const productPromise = api.listAdminProducts();
       const voucherPromise = adminToken ? api.listAdminVouchers(adminToken) : Promise.resolve([]);
-      const [orderData, voucherData] = await Promise.all([orderPromise, voucherPromise]);
+      const [orderData, productData, voucherData] = await Promise.all([orderPromise, productPromise, voucherPromise]);
       setOrders(orderData);
+      setProducts(productData);
       setVouchers(voucherData);
     } catch (loadError) {
       setError(loadError.message);
@@ -59,6 +74,7 @@ export default function AdminPage() {
   const activeVouchers = useMemo(() => vouchers.filter((voucher) => voucher.status === 'ACTIVE'), [vouchers]);
   const expiredVouchers = useMemo(() => vouchers.filter((voucher) => voucher.status === 'EXPIRED'), [vouchers]);
   const disabledVouchers = useMemo(() => vouchers.filter((voucher) => voucher.status === 'INACTIVE'), [vouchers]);
+  const lowStockProducts = useMemo(() => products.filter((product) => Number(product.stock || 0) <= 3), [products]);
 
   async function refreshVouchers() {
     if (!adminToken) {
@@ -116,6 +132,67 @@ export default function AdminPage() {
       startAt: String(voucher.startAt).slice(0, 16),
       endAt: String(voucher.endAt).slice(0, 16),
     });
+  }
+
+  function startEditProduct(product) {
+    setEditingProductId(product.id);
+    setProductForm({
+      name: product.name || '',
+      description: product.description || '',
+      price: Number(product.price || 0),
+      stock: Number(product.stock || 0),
+      originLocation: product.originLocation || '',
+      purchaseDate: product.purchaseDate || '',
+      returnDate: product.returnDate || '',
+    });
+  }
+
+  function resetProductForm() {
+    setEditingProductId(null);
+    setProductForm(EMPTY_PRODUCT_FORM);
+  }
+
+  async function handleProductSubmit(event) {
+    event.preventDefault();
+    if (!editingProductId) {
+      return;
+    }
+
+    setBusyKey('product-form');
+    setError('');
+    setMessage('');
+    try {
+      await api.adminUpdateProduct(editingProductId, {
+        ...productForm,
+        price: Number(productForm.price),
+        stock: Number(productForm.stock),
+      });
+      setMessage(`Product ${productForm.name} updated.`);
+      resetProductForm();
+      setProducts(await api.listAdminProducts());
+    } catch (actionError) {
+      setError(actionError.message);
+    } finally {
+      setBusyKey('');
+    }
+  }
+
+  async function handleDeleteProduct(productId) {
+    setBusyKey(`product-${productId}`);
+    setError('');
+    setMessage('');
+    try {
+      await api.adminDeleteProduct(productId);
+      setMessage(`Product ${productId} deleted.`);
+      if (editingProductId === productId) {
+        resetProductForm();
+      }
+      setProducts(await api.listAdminProducts());
+    } catch (actionError) {
+      setError(actionError.message);
+    } finally {
+      setBusyKey('');
+    }
   }
 
   async function handleDisableVoucher(voucherId) {
@@ -351,6 +428,148 @@ export default function AdminPage() {
               </div>
             ))}
           </div>
+        </article>
+      </div>
+
+      <div className="grid-two">
+        <article className="card">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Product Monitoring</p>
+              <h2>System-wide catalog</h2>
+            </div>
+            <span className="pill pill--accent">{lowStockProducts.length} low stock</span>
+          </div>
+          <div className="order-list">
+            {products.map((product) => (
+              <div className="service-panel" key={product.id}>
+                <div className="service-panel__top">
+                  <div>
+                    <strong>{product.name}</strong>
+                    <p className="muted">
+                      Jastiper {product.jastiperId} | {product.originLocation} | stock {product.stock}
+                    </p>
+                  </div>
+                  <strong>{formatCurrency(product.price)}</strong>
+                </div>
+                <p className="muted">
+                  Window {formatDate(product.purchaseDate)} - {formatDate(product.returnDate)}
+                </p>
+                <div className="button-row">
+                  <button className="button button--secondary" onClick={() => startEditProduct(product)} type="button">
+                    Edit
+                  </button>
+                  <button
+                    className="button button--ghost"
+                    disabled={busyKey === `product-${product.id}`}
+                    onClick={() => handleDeleteProduct(product.id)}
+                    type="button"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </article>
+
+        <article className="card">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Product Controls</p>
+              <h2>{editingProductId ? 'Edit selected product' : 'Select a product'}</h2>
+            </div>
+            {editingProductId && (
+              <button className="button button--ghost" onClick={resetProductForm} type="button">
+                Reset
+              </button>
+            )}
+          </div>
+          <form className="form-stack" onSubmit={handleProductSubmit}>
+            <label className="field">
+              <span>Name</span>
+              <input
+                className="input"
+                disabled={!editingProductId}
+                required
+                value={productForm.name}
+                onChange={(event) => setProductForm((current) => ({ ...current, name: event.target.value }))}
+              />
+            </label>
+            <label className="field">
+              <span>Description</span>
+              <textarea
+                className="input min-h-24"
+                disabled={!editingProductId}
+                required
+                value={productForm.description}
+                onChange={(event) => setProductForm((current) => ({ ...current, description: event.target.value }))}
+              />
+            </label>
+            <div className="grid-two">
+              <label className="field">
+                <span>Price</span>
+                <input
+                  className="input"
+                  disabled={!editingProductId}
+                  min={1}
+                  required
+                  type="number"
+                  value={productForm.price}
+                  onChange={(event) => setProductForm((current) => ({ ...current, price: event.target.value }))}
+                />
+              </label>
+              <label className="field">
+                <span>Stock</span>
+                <input
+                  className="input"
+                  disabled={!editingProductId}
+                  min={0}
+                  required
+                  type="number"
+                  value={productForm.stock}
+                  onChange={(event) => setProductForm((current) => ({ ...current, stock: event.target.value }))}
+                />
+              </label>
+            </div>
+            <label className="field">
+              <span>Origin Location</span>
+              <input
+                className="input"
+                disabled={!editingProductId}
+                required
+                value={productForm.originLocation}
+                onChange={(event) => setProductForm((current) => ({ ...current, originLocation: event.target.value }))}
+              />
+            </label>
+            <div className="grid-two">
+              <label className="field">
+                <span>Purchase Date</span>
+                <input
+                  className="input"
+                  disabled={!editingProductId}
+                  required
+                  type="date"
+                  value={productForm.purchaseDate}
+                  onChange={(event) => setProductForm((current) => ({ ...current, purchaseDate: event.target.value }))}
+                />
+              </label>
+              <label className="field">
+                <span>Return Date</span>
+                <input
+                  className="input"
+                  disabled={!editingProductId}
+                  required
+                  type="date"
+                  value={productForm.returnDate}
+                  onChange={(event) => setProductForm((current) => ({ ...current, returnDate: event.target.value }))}
+                />
+              </label>
+            </div>
+            <button className="button button--block" disabled={!editingProductId || busyKey === 'product-form'} type="submit">
+              Update product
+            </button>
+          </form>
         </article>
       </div>
 

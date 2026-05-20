@@ -48,9 +48,14 @@ export default function PrimaryHeader({ active = 'home', walletBalance = null, s
                   Profile
                 </NavLink>
                 {user?.role === 'JASTIPER' && (
-                  <NavLink className={navClass(active, 'jastiper')} to="/jastiper/orders">
-                    Jastiper
-                  </NavLink>
+                  <>
+                    <NavLink className={navClass(active, 'jastiper')} to="/jastiper/catalog">
+                      Catalog
+                    </NavLink>
+                    <NavLink className={navClass(active, 'jastiper')} to="/jastiper/orders">
+                      Jastiper
+                    </NavLink>
+                  </>
                 )}
                 {user?.role === 'ADMIN' && (
                   <NavLink className={navClass(active, 'admin')} to="/admin">

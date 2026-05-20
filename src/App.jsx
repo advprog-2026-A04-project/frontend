@@ -5,6 +5,7 @@ import AdminPage from './pages/AdminPage';
 import CatalogPage from './pages/CatalogPage';
 import CheckoutPage from './pages/CheckoutPage';
 import HomePage from './pages/HomePage';
+import JastiperCatalogPage from './pages/JastiperCatalogPage';
 import JastiperOrdersPage from './pages/JastiperOrdersPage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -38,6 +39,7 @@ function App() {
           </Route>
 
           <Route element={<ProtectedRoute roles={['JASTIPER', 'ADMIN']} />}>
+            <Route element={<JastiperCatalogPage />} path="/jastiper/catalog" />
             <Route element={<JastiperOrdersPage />} path="/jastiper/orders" />
           </Route>
 
