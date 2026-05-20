@@ -11,6 +11,12 @@ export function formatDate(value) {
     return '-';
   }
 
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(value))) {
+    return new Date(`${value}T00:00:00`).toLocaleDateString('id-ID', {
+      dateStyle: 'medium',
+    });
+  }
+
   return new Date(value).toLocaleString('id-ID', {
     dateStyle: 'medium',
     timeStyle: 'short',
