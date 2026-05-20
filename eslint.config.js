@@ -5,7 +5,13 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores([
+    'coverage',
+    'dist',
+    'verification/selenium-verifier/.venv/**',
+    'verification/selenium-verifier/.pytest_cache/**',
+    'verification/selenium-verifier/verification-artifacts/**',
+  ]),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -23,7 +29,23 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^[A-Z_]' }],
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
+    files: ['server/**/*.js'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
+  {
+    files: ['src/test/**/*.{js,jsx}'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
     },
   },
 ])

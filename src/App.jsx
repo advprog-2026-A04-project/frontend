@@ -1,57 +1,56 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Layout from './components/Layout';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import ProtectedRoute from './components/ProtectedRoute';
+import { SessionProvider } from './context/SessionContext';
+import AdminPage from './pages/AdminPage';
+import CatalogPage from './pages/CatalogPage';
+import CheckoutPage from './pages/CheckoutPage';
 import HomePage from './pages/HomePage';
+import JastiperCatalogPage from './pages/JastiperCatalogPage';
+import JastiperOrdersPage from './pages/JastiperOrdersPage';
+import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
-
-// Auth-Profile feature
-import LoginPage from './features/auth-profile/LoginPage';
-import RegisterPage from './features/auth-profile/RegisterPage';
-import ProfilePage from './features/auth-profile/ProfilePage';
-
-// Order feature
-import OrderListPage from './features/order/OrderListPage';
-import OrderDetailPage from './features/order/OrderDetailPage';
-
-// Voucher-Promo feature
-import VoucherListPage from './features/voucher-promo/VoucherListPage';
-
-// Wallet feature
-import WalletPage from './features/wallet/WalletPage';
-
-// Inventory feature
-import InventoryPage from './features/inventory/InventoryPage';
+import OrderResultPage from './pages/OrderResultPage';
+import OrdersPage from './pages/OrdersPage';
+import ProfilePage from './pages/ProfilePage';
+import ProductDetailPage from './pages/ProductDetailPage';
+import RegisterPage from './pages/RegisterPage';
+import WalletPage from './pages/WalletPage';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          {/* Home */}
-          <Route index element={<HomePage />} />
+    <SessionProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<HomePage />} path="/" />
+          <Route element={<CatalogPage />} path="/browse" />
+          <Route element={<CatalogPage />} path="/products" />
+          <Route element={<ProductDetailPage />} path="/product/:productId" />
+          <Route element={<ProductDetailPage />} path="/products/:productId" />
+          <Route element={<RegisterPage />} path="/register" />
+          <Route element={<LoginPage />} path="/login" />
 
-          {/* Auth-Profile routes */}
-          <Route path="login" element={<LoginPage />} />
-          <Route path="register" element={<RegisterPage />} />
-          <Route path="profile" element={<ProfilePage />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<CheckoutPage />} path="/checkout" />
+            <Route element={<WalletPage />} path="/wallet" />
+            <Route element={<OrdersPage />} path="/orders" />
+            <Route element={<OrderResultPage />} path="/orders/:orderId" />
+            <Route element={<OrderResultPage />} path="/success" />
+            <Route element={<ProfilePage />} path="/profile" />
+          </Route>
 
-          {/* Order routes */}
-          <Route path="orders" element={<OrderListPage />} />
-          <Route path="orders/:id" element={<OrderDetailPage />} />
+          <Route element={<ProtectedRoute roles={['JASTIPER', 'ADMIN']} />}>
+            <Route element={<JastiperCatalogPage />} path="/jastiper/catalog" />
+            <Route element={<JastiperOrdersPage />} path="/jastiper/orders" />
+          </Route>
 
-          {/* Voucher-Promo routes */}
-          <Route path="vouchers" element={<VoucherListPage />} />
+          <Route element={<ProtectedRoute roles={['ADMIN']} />}>
+            <Route element={<AdminPage />} path="/admin" />
+          </Route>
 
-          {/* Wallet routes */}
-          <Route path="wallet" element={<WalletPage />} />
-
-          {/* Inventory routes */}
-          <Route path="inventory" element={<InventoryPage />} />
-
-          {/* 404 */}
-          <Route path="*" element={<NotFoundPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+          <Route element={<NotFoundPage />} path="*" />
+        </Routes>
+      </BrowserRouter>
+    </SessionProvider>
   );
 }
 

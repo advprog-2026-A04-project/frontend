@@ -1,106 +1,163 @@
-# AdvProg 2026 A04 - Frontend
+# Frontend Milestone 75
 
-Shared frontend application for our microservice-based project, built with **React + Vite**.
+Real frontend for JSON / JaStip Online Nasional Milestone `75%`.
 
-## Tech Stack
+## Frontend Source Decision
 
-- **React 19** - UI library
-- **Vite 7** - Build tool & dev server
-- **React Router 7** - Client-side routing
-- **Axios** - HTTP client for backend API calls
+The current website UI follows the newer attached frontend source:
 
-## Getting Started
+- `remix_-json-limited-drops (1).zip`
+
+The previous frontend implementation is still reused where it was already proven:
+
+- centralized API integration in `src/lib/api.js`
+- route contracts and role guards
+- environment variables and deployment config
+- Selenium verification
+- backend compatibility for admin and jastiper operations
+
+That split is intentional. The newer attached frontend wins for buyer-facing UI and layout. The previous frontend only supplies the data layer and operational flows that the newer UI did not include.
+
+## Scope
+
+Implemented flows:
+
+- landing page
+- register and login
+- product browse and search
+- product detail
+- wallet balance, top-up, and transaction history
+- checkout with voucher code
+- buyer order history and active orders
+- order detail and rating after completion
+- jastiper lifecycle processing
+- admin voucher management
+- admin order monitoring
+
+Checkout orchestration remains in the Order service.
+
+## Runtime
+
+- React + Vite
+- static build served by `nginx`
+- direct browser calls to Auth, Inventory, Wallet, Order, and Voucher services
+
+## Local Setup
+
+Required runtime: Node `20.19.0+`.
+
+The repo pins that version in `.nvmrc`, and the production Dockerfile already uses `node:20.19-alpine`.
+
+1. Install the required Node runtime:
 
 ```bash
-# 1. Clone the repo
-git clone https://github.com/advprog-2026-A04-project/frontend.git
-cd frontend
+nvm install 20.19.0
+nvm use 20.19.0
+```
 
-# 2. Install dependencies
+2. Install dependencies:
+
+```bash
 npm install
+```
 
-# 3. Copy environment file and update URLs
+3. Copy local build variables if you want to override the built-in defaults:
+
+```bash
 cp .env.example .env
+```
 
-# 4. Start development server
+PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+4. Start the frontend:
+
+```bash
 npm run dev
 ```
 
-The app will be available at `http://localhost:5173`.
+Default URL behavior without a committed `.env.production`:
 
-## Project Structure
+- browser on `localhost` or `127.0.0.1`: uses local service defaults
+- deployed browser origin: uses the deployed Cloud Run service URLs baked into `src/lib/api.js`
 
-```
-src/
-├── api/                    # Axios instances per microservice
-│   └── axiosInstance.js    # Pre-configured axios with JWT interceptors
-├── components/             # Shared/reusable components
-│   ├── Layout.jsx          # Main layout with Navbar + Outlet
-│   └── Navbar.jsx          # Navigation bar
-├── features/               # Feature modules (one per microservice)
-│   ├── auth-profile/       # Login, Register, Profile pages
-│   ├── order/              # Order list, Order detail pages
-│   ├── voucher-promo/      # Voucher & promo pages
-│   ├── wallet/             # Wallet pages
-│   └── inventory/          # Inventory/product pages
-├── pages/                  # Top-level pages (Home, 404)
-├── App.jsx                 # Root component with routing
-├── main.jsx                # Entry point
-└── index.css               # Global styles
-```
+Local backend defaults expected by the Vite client:
 
-## Team Workflow
+- auth: `http://localhost:8081`
+- inventory: `http://localhost:8082`
+- wallet: `http://localhost:8083`
+- order: `http://localhost:8084`
+- voucher: `http://localhost:8085`
 
-Each team member works primarily in their own feature folder under `src/features/`:
-
-| Member | Feature Folder | Backend Repo |
-|--------|---------------|--------------|
-| Member 1 | `src/features/auth-profile/` | Auth-Profile |
-| Member 2 | `src/features/order/` | Order |
-| Member 3 | `src/features/voucher-promo/` | Voucher-Promo |
-| Member 4 | `src/features/wallet/` | Wallet |
-| Member 5 | `src/features/inventory/` | Inventory |
-
-### Git Branching Strategy
-
-1. **Always create a feature branch** from `main`:
-   ```bash
-   git checkout main
-   git pull origin main
-   git checkout -b feature/order-list
-   ```
-2. **Push your branch** and create a **Pull Request** to `main`
-3. **Get at least 1 review** before merging
-4. **Never push directly to `main`**
-
-### Adding API Calls
-
-Import the pre-configured axios instance for your microservice:
-
-```jsx
-import { orderApi } from '../../api/axiosInstance';
-
-// Example: fetch orders
-const response = await orderApi.get('/api/orders');
-```
+If local demo accounts are needed, start Auth with `APP_DEMO_SEED_ENABLED=true`.
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` and update the URLs to match your local backend ports:
+Optional build-time Vite variables:
 
+- `VITE_AUTH_BASE_URL`
+- `VITE_INVENTORY_BASE_URL`
+- `VITE_WALLET_BASE_URL`
+- `VITE_ORDER_BASE_URL`
+- `VITE_VOUCHER_BASE_URL`
+
+Leave these blank unless you intentionally want to override the built-in defaults.
+
+Do not put private admin tokens or service secrets into the frontend build.
+
+The admin page now requires manual voucher admin token input at runtime. Real admin tokens must stay in Cloud Run env or local shell env only. They must not be committed in `.env`, `.env.production`, or any `VITE_` variable.
+
+## Commands
+
+```bash
+npm run dev
+npm run lint
+npm run test
+npm run build
 ```
-VITE_AUTH_PROFILE_URL=http://localhost:8081
-VITE_ORDER_URL=http://localhost:8082
-VITE_VOUCHER_PROMO_URL=http://localhost:8083
-VITE_WALLET_URL=http://localhost:8084
-VITE_INVENTORY_URL=http://localhost:8085
+
+## Deployment
+
+Target platform: Google Cloud Run.
+
+The production build does not rely on a committed `.env.production`. It uses either explicit `VITE_*` overrides or the deployed Cloud Run fallbacks in `src/lib/api.js`:
+
+- auth: `https://auth-profile-api-osvihgaoya-uc.a.run.app`
+- inventory: `https://inventory-api-osvihgaoya-uc.a.run.app`
+- wallet: `https://wallet-api-osvihgaoya-uc.a.run.app`
+- order: `https://order-api-osvihgaoya-uc.a.run.app`
+- voucher: `https://voucher-promo-api-osvihgaoya-uc.a.run.app`
+
+Basic deploy:
+
+```bash
+gcloud run deploy advprog-frontend-m25-m50 --source . --region us-central1 --allow-unauthenticated
 ```
 
-## Available Scripts
+## Selenium Verification
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start dev server |
-| `npm run build` | Build for production |
-| `npm run preview` | Preview production build |
-| `npm run lint` | Run ESLint |
+Milestone 75 Selenium coverage lives in [verification/selenium-verifier](./verification/selenium-verifier).
+
+It supports:
+
+- local stack verification
+- deployed Cloud Run verification
+- screenshot capture on failure
+- JSON run summaries
+
+See the verifier README for the required environment variables and commands.
+
+## Evidence
+
+Deployment and verification notes are tracked in:
+
+- [MILESTONE_75_DEPLOYMENT_VERIFICATION.md](./MILESTONE_75_DEPLOYMENT_VERIFICATION.md)
+
+## Risks
+
+- Voucher admin tokens must stay out of frontend source and committed env files.
+- The frontend assumes backend CORS allows the deployed frontend origin.
+- The public Cloud Run demo may intentionally enable demo Auth seeding through `APP_DEMO_SEED_ENABLED=true`, but that is a demo-only deployment decision and should remain disabled by default elsewhere.
