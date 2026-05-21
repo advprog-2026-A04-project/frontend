@@ -273,9 +273,11 @@ class SetupHelper:
             evidence_name=f"{prefix}_request",
         ).payload
         request_id = int(top_up_response["requestId"])
+        if not self.settings.internal_api_token:
+            raise AssertionError("INTERNAL_API_TOKEN is required to verify top-up requests.")
         self.services.wallet.mark_top_up_success(
             request_id,
-            token=user.token,
+            internal_token=self.settings.internal_api_token,
             evidence=evidence,
             evidence_name=f"{prefix}_mark_success",
         )

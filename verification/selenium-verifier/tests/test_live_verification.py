@@ -149,6 +149,18 @@ def transactions_for_order(transactions: list[dict], order_id: int, txn_type: st
     return matched
 
 
+def record_verified(artifact_manager, scenario_artifacts, scenario: str, details: dict) -> None:
+    scenario_artifacts.write_json("details.json", details)
+    artifact_manager.record_scenario(scenario, VERIFIED, details)
+
+
+def record_failed(artifact_manager, scenario_artifacts, pages, scenario: str, details: dict, error: Exception) -> None:
+    scenario_artifacts.save_screenshot("failure.png", pages.driver)
+    details["error"] = str(error)
+    scenario_artifacts.write_json("failure.json", details)
+    artifact_manager.record_scenario(scenario, FAILED, details)
+
+
 @pytest.mark.live
 @pytest.mark.smoke
 def test_health_and_environment_sanity(settings, artifact_manager, scenario_artifacts):
@@ -461,6 +473,110 @@ def test_profile_update_persists_in_ui_and_auth_service(
 
 
 @pytest.mark.live
+@pytest.mark.admin
+def test_kyc_submission_and_admin_user_controls(
+    settings,
+    services,
+    setup_helper,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "kyc_submission_and_admin_user_controls"
+    details = {}
+
+    try:
+        buyer = setup_helper.register_user_api(
+            setup_helper.new_user("kyc-buyer"),
+            evidence=scenario_artifacts,
+            evidence_name="kyc_buyer_register",
+        )
+
+        ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "kyc_buyer")
+        pages.profile.load()
+        document_url = f"https://example.com/kyc/{buyer.user_id}.pdf"
+        pages.profile.submit_kyc(document_url, "Ready to become a verified Jastiper.")
+        pages.profile.wait_for_notice("KYC submitted for admin review.")
+        scenario_artifacts.save_screenshot("kyc_submitted.png", pages.driver)
+
+        submitted_profile = services.auth.me(
+            browser_token(pages.driver),
+            evidence=scenario_artifacts,
+            evidence_name="kyc_submitted_profile",
+        ).payload
+        assert submitted_profile["kycStatus"] == "PENDING"
+        assert submitted_profile["role"] == "TITIPER"
+
+        ui_logout_if_needed(pages)
+        admin = setup_helper.login_existing_user_api(
+            settings.admin_email,
+            settings.admin_password,
+            evidence=scenario_artifacts,
+            evidence_name="kyc_admin_login_api",
+        )
+        ui_login(pages, admin.email, settings.admin_password, scenario_artifacts, "kyc_admin")
+        pages.admin.load()
+        pages.admin.wait_for_user(buyer.email)
+        pending_status = pages.admin.user_status_text(buyer.email)
+        assert "PENDING" in pending_status
+        scenario_artifacts.save_screenshot("admin_kyc_pending.png", pages.driver)
+
+        pages.admin.click_user_action(buyer.email, "Approve KYC")
+        pages.admin.wait_for_user_status(buyer.email, "JASTIPER / APPROVED")
+        scenario_artifacts.save_screenshot("admin_kyc_approved.png", pages.driver)
+
+        approved_profile = services.auth.me(
+            buyer.token,
+            evidence=scenario_artifacts,
+            evidence_name="kyc_approved_profile",
+        ).payload
+        assert approved_profile["role"] == "JASTIPER"
+        assert approved_profile["kycStatus"] == "APPROVED"
+
+        pages.admin.click_user_action(buyer.email, "Ban")
+        pages.admin.wait_for_user_banned(buyer.email)
+        scenario_artifacts.save_screenshot("admin_user_banned.png", pages.driver)
+        banned_login = services.auth.request(
+            "POST",
+            "/auth/login",
+            json_body={"email": buyer.email, "password": buyer.password},
+            expected_status=403,
+            evidence=scenario_artifacts,
+            evidence_name="banned_login_rejected",
+        )
+
+        pages.admin.click_user_action(buyer.email, "Unban")
+        pages.admin.wait_for_user_unbanned(buyer.email)
+        scenario_artifacts.save_screenshot("admin_user_unbanned.png", pages.driver)
+        unbanned_login = services.auth.login(
+            buyer.email,
+            buyer.password,
+            evidence=scenario_artifacts,
+            evidence_name="unbanned_login_allowed",
+        ).payload
+
+        details.update(
+            {
+                "buyer_id": buyer.user_id,
+                "buyer_email": buyer.email,
+                "submitted_status": submitted_profile["kycStatus"],
+                "approved_status": approved_profile["kycStatus"],
+                "approved_role": approved_profile["role"],
+                "banned_login_status": banned_login.status_code,
+                "unbanned_login_role": unbanned_login["role"],
+            }
+        )
+        scenario_artifacts.write_json("details.json", details)
+        artifact_manager.record_scenario(scenario, VERIFIED, details)
+    except Exception as error:  # noqa: BLE001
+        scenario_artifacts.save_screenshot("failure.png", pages.driver)
+        details["error"] = str(error)
+        scenario_artifacts.write_json("failure.json", details)
+        artifact_manager.record_scenario(scenario, FAILED, details)
+        raise
+
+
+@pytest.mark.live
 def test_route_guards_search_filters_and_role_navigation(
     settings,
     pages,
@@ -478,7 +594,7 @@ def test_route_guards_search_filters_and_role_navigation(
         scenario_artifacts.save_screenshot("protected_wallet_redirect.png", pages.driver)
 
         pages.login.login(settings.buyer_email, settings.buyer_password)
-        pages.wallet.wait_for_text("Add balance instantly")
+        pages.wallet.wait_for_text("Request balance top up")
         wait_for_path(pages, "/wallet")
         scenario_artifacts.save_screenshot("wallet_after_guarded_login.png", pages.driver)
 
@@ -653,6 +769,105 @@ def test_unauthorized_role_actions_are_rejected(
 
 
 @pytest.mark.live
+@pytest.mark.admin
+def test_wallet_topup_and_withdrawal_admin_verification(
+    settings,
+    services,
+    setup_helper,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "wallet_topup_and_withdrawal_admin_verification"
+    details = {}
+
+    try:
+        buyer = setup_helper.register_user_api(
+            setup_helper.new_user("wallet-admin-flow"),
+            evidence=scenario_artifacts,
+            evidence_name="wallet_admin_buyer_register",
+        )
+        admin = setup_helper.login_existing_user_api(
+            settings.admin_email,
+            settings.admin_password,
+            evidence=scenario_artifacts,
+            evidence_name="wallet_admin_login_api",
+        )
+
+        ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "wallet_flow_buyer")
+        pages.wallet.load()
+        balance_before = parse_currency(pages.wallet.balance_text())
+        assert balance_before == Decimal("0")
+
+        pages.wallet.top_up(180000)
+        topup_id, topup_message = pages.wallet.wait_for_top_up_request()
+        assert "pending admin verification" in topup_message.lower()
+        scenario_artifacts.save_screenshot("wallet_topup_pending.png", pages.driver)
+
+        ui_logout_if_needed(pages)
+        ui_login(pages, admin.email, settings.admin_password, scenario_artifacts, "wallet_flow_admin_topup")
+        pages.admin.load()
+        pages.admin.wait_for_topup_request(topup_id, "PENDING")
+        pages.admin.mark_topup_success(topup_id)
+        pages.admin.wait_for_topup_request(topup_id, "SUCCESS")
+        scenario_artifacts.save_screenshot("admin_topup_success.png", pages.driver)
+
+        ui_logout_if_needed(pages)
+        ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "wallet_flow_buyer_after_topup")
+        pages.wallet.load()
+        balance_after_topup = parse_currency(pages.wallet.balance_text())
+        assert balance_after_topup == Decimal("180000")
+        assert pages.wallet.has_transaction_type("TOPUP")
+
+        pages.wallet.withdraw(50000, f"BCA demo account {buyer.user_id}")
+        withdrawal_id, withdrawal_message = pages.wallet.wait_for_withdrawal_request()
+        assert "pending admin verification" in withdrawal_message.lower()
+        scenario_artifacts.save_screenshot("wallet_withdrawal_pending.png", pages.driver)
+
+        ui_logout_if_needed(pages)
+        ui_login(pages, admin.email, settings.admin_password, scenario_artifacts, "wallet_flow_admin_withdrawal")
+        pages.admin.load()
+        pages.admin.wait_for_withdrawal_request(withdrawal_id, "PENDING")
+        pages.admin.mark_withdrawal_success(withdrawal_id)
+        pages.admin.wait_for_withdrawal_request(withdrawal_id, "SUCCESS")
+        scenario_artifacts.save_screenshot("admin_withdrawal_success.png", pages.driver)
+
+        ui_logout_if_needed(pages)
+        ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "wallet_flow_buyer_after_withdrawal")
+        pages.wallet.load()
+        balance_after_withdrawal = parse_currency(pages.wallet.balance_text())
+        assert balance_after_withdrawal == Decimal("130000")
+        assert pages.wallet.has_transaction_type("WITHDRAWAL")
+        transactions = services.wallet.list_transactions(
+            buyer.user_id,
+            token=buyer.token,
+            evidence=scenario_artifacts,
+            evidence_name="wallet_flow_transactions",
+        ).payload
+
+        details.update(
+            {
+                "buyer_id": buyer.user_id,
+                "admin_id": admin.user_id,
+                "topup_id": topup_id,
+                "withdrawal_id": withdrawal_id,
+                "balance_before": str(balance_before),
+                "balance_after_topup": str(balance_after_topup),
+                "balance_after_withdrawal": str(balance_after_withdrawal),
+                "transaction_types": [item["type"] for item in transactions],
+            }
+        )
+        scenario_artifacts.write_json("details.json", details)
+        artifact_manager.record_scenario(scenario, VERIFIED, details)
+    except Exception as error:  # noqa: BLE001
+        scenario_artifacts.save_screenshot("failure.png", pages.driver)
+        details["error"] = str(error)
+        scenario_artifacts.write_json("failure.json", details)
+        artifact_manager.record_scenario(scenario, FAILED, details)
+        raise
+
+
+@pytest.mark.live
 @pytest.mark.smoke
 def test_checkout_wallet_history_and_order_views(
     settings,
@@ -708,7 +923,17 @@ def test_checkout_wallet_history_and_order_views(
         )
         if top_up_amount > 0:
             pages.wallet.top_up(int(top_up_amount))
-            pages.wallet.wait_for_top_up_success()
+            request_id, top_up_text = pages.wallet.wait_for_top_up_request()
+            if not settings.internal_api_token:
+                raise AssertionError("INTERNAL_API_TOKEN is required to verify top-up requests.")
+            services.wallet.mark_top_up_success(
+                request_id,
+                internal_token=settings.internal_api_token,
+                evidence=scenario_artifacts,
+                evidence_name="wallet_mark_topup_success",
+            )
+            assert "pending admin verification" in top_up_text
+            pages.wallet.load()
         scenario_artifacts.save_screenshot("wallet_after_topup.png", pages.driver)
 
         after_topup_balance = Decimal(
@@ -1747,4 +1972,601 @@ def test_admin_voucher_management_and_public_visibility(
         details["error"] = str(error)
         scenario_artifacts.write_json("failure.json", details)
         artifact_manager.record_scenario(scenario, FAILED, details)
+        raise
+
+
+@pytest.mark.live
+def test_register_duplicate_email_shows_form_error(
+    setup_helper,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "register_duplicate_email_shows_form_error"
+    details = {}
+
+    try:
+        existing_user = setup_helper.register_user_api(
+            setup_helper.new_user("duplicate-email"),
+            evidence=scenario_artifacts,
+            evidence_name="existing_user_register",
+        )
+
+        pages.register.load()
+        pages.register.register(existing_user.email, f"{existing_user.username}copy", existing_user.password)
+        error_text = pages.register.error_text()
+        assert pages.register.current_path() == "/register"
+        assert any(fragment in error_text.lower() for fragment in ("already", "email", "username", "used"))
+        scenario_artifacts.save_screenshot("duplicate_register_error.png", pages.driver)
+
+        details.update(
+            {
+                "email": existing_user.email,
+                "error_text": error_text,
+                "current_path": pages.register.current_path(),
+            }
+        )
+        record_verified(artifact_manager, scenario_artifacts, scenario, details)
+    except Exception as error:  # noqa: BLE001
+        record_failed(artifact_manager, scenario_artifacts, pages, scenario, details, error)
+        raise
+
+
+@pytest.mark.live
+def test_catalog_empty_search_state_and_restore(
+    settings,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "catalog_empty_search_state_and_restore"
+    details = {}
+
+    try:
+        ui_login(pages, settings.buyer_email, settings.buyer_password, scenario_artifacts, "catalog_empty")
+        pages.catalog.load()
+        names_before = pages.catalog.visible_product_names()
+        assert names_before
+
+        missing_query = f"missing-{datetime.utcnow().strftime('%H%M%S%f')}"
+        pages.catalog.search(missing_query)
+        pages.catalog.wait_for_text("No products matched this search.")
+        scenario_artifacts.save_screenshot("catalog_empty_search.png", pages.driver)
+
+        pages.catalog.search("")
+        pages.wait.until(lambda _driver: len(pages.catalog.visible_product_names()) == len(names_before))
+        names_after_restore = pages.catalog.visible_product_names()
+        scenario_artifacts.save_screenshot("catalog_restored_after_empty_search.png", pages.driver)
+
+        details.update(
+            {
+                "missing_query": missing_query,
+                "initial_count": len(names_before),
+                "restored_count": len(names_after_restore),
+                "first_product": names_after_restore[0],
+            }
+        )
+        record_verified(artifact_manager, scenario_artifacts, scenario, details)
+    except Exception as error:  # noqa: BLE001
+        record_failed(artifact_manager, scenario_artifacts, pages, scenario, details, error)
+        raise
+
+
+@pytest.mark.live
+def test_products_alias_detail_matches_catalog_item(
+    settings,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "products_alias_detail_matches_catalog_item"
+    details = {}
+
+    try:
+        ui_login(pages, settings.buyer_email, settings.buyer_password, scenario_artifacts, "product_alias")
+        pages.catalog.load()
+        expected_name = pages.catalog.visible_product_names()[0]
+        pages.catalog.open_first_product()
+        pages.product_detail.wait_loaded()
+        canonical_name = pages.product_detail.product_name()
+        product_id = pages.product_detail.product_id()
+        assert canonical_name == expected_name
+        scenario_artifacts.save_screenshot("canonical_product_detail.png", pages.driver)
+
+        pages.driver.get(f"{settings.frontend_base_url.rstrip('/')}/products/{product_id}")
+        pages.product_detail.wait_loaded()
+        alias_name = pages.product_detail.product_name()
+        assert alias_name == canonical_name
+        scenario_artifacts.save_screenshot("products_alias_detail.png", pages.driver)
+
+        details.update(
+            {
+                "product_id": product_id,
+                "canonical_name": canonical_name,
+                "alias_name": alias_name,
+                "alias_path": urlparse(pages.driver.current_url).path,
+            }
+        )
+        record_verified(artifact_manager, scenario_artifacts, scenario, details)
+    except Exception as error:  # noqa: BLE001
+        record_failed(artifact_manager, scenario_artifacts, pages, scenario, details, error)
+        raise
+
+
+@pytest.mark.live
+def test_new_buyer_orders_show_empty_states(
+    setup_helper,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "new_buyer_orders_show_empty_states"
+    details = {}
+
+    try:
+        buyer = setup_helper.register_user_api(
+            setup_helper.new_user("empty-orders"),
+            evidence=scenario_artifacts,
+            evidence_name="empty_orders_register",
+        )
+
+        ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "empty_orders")
+        pages.orders.load()
+        pages.orders.wait_for_text("No active orders.")
+        pages.orders.wait_for_text("No orders yet.")
+        scenario_artifacts.save_screenshot("new_buyer_empty_orders.png", pages.driver)
+
+        details.update(
+            {
+                "buyer_id": buyer.user_id,
+                "buyer_email": buyer.email,
+                "current_path": pages.orders.current_path(),
+            }
+        )
+        record_verified(artifact_manager, scenario_artifacts, scenario, details)
+    except Exception as error:  # noqa: BLE001
+        record_failed(artifact_manager, scenario_artifacts, pages, scenario, details, error)
+        raise
+
+
+@pytest.mark.live
+def test_buyer_profile_cards_navigate_to_wallet_and_orders(
+    setup_helper,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "buyer_profile_cards_navigate_to_wallet_and_orders"
+    details = {}
+
+    try:
+        buyer = setup_helper.register_user_api(
+            setup_helper.new_user("buyer-cards"),
+            evidence=scenario_artifacts,
+            evidence_name="buyer_cards_register",
+        )
+
+        ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "buyer_cards")
+        pages.profile.load()
+        assert pages.profile.has_card("Wallet")
+        assert pages.profile.has_card("Orders")
+
+        pages.profile.open_card("Wallet")
+        pages.wallet.wait_for_text("Request balance top up")
+        wait_for_path(pages, "/wallet")
+        scenario_artifacts.save_screenshot("profile_card_wallet.png", pages.driver)
+
+        pages.profile.load()
+        pages.profile.open_card("Orders")
+        pages.orders.wait_for_text("Track your active and completed orders.")
+        wait_for_path(pages, "/orders")
+        scenario_artifacts.save_screenshot("profile_card_orders.png", pages.driver)
+
+        details.update(
+            {
+                "buyer_id": buyer.user_id,
+                "wallet_path": "/wallet",
+                "orders_path": "/orders",
+            }
+        )
+        record_verified(artifact_manager, scenario_artifacts, scenario, details)
+    except Exception as error:  # noqa: BLE001
+        record_failed(artifact_manager, scenario_artifacts, pages, scenario, details, error)
+        raise
+
+
+@pytest.mark.live
+def test_jastiper_profile_queue_card_navigates_to_jastiper_orders(
+    settings,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "jastiper_profile_queue_card_navigates_to_jastiper_orders"
+    details = {}
+
+    try:
+        ui_login(pages, settings.jastiper_email, settings.jastiper_password, scenario_artifacts, "jastiper_card")
+        pages.profile.load()
+        assert pages.profile.has_card("Jastiper Queue")
+        pages.profile.open_card("Jastiper Queue")
+        pages.jastiper.wait_for_text("Process active orders")
+        wait_for_path(pages, "/jastiper/orders")
+        scenario_artifacts.save_screenshot("profile_card_jastiper_queue.png", pages.driver)
+
+        details.update(
+            {
+                "email": settings.jastiper_email,
+                "current_path": pages.jastiper.current_path(),
+            }
+        )
+        record_verified(artifact_manager, scenario_artifacts, scenario, details)
+    except Exception as error:  # noqa: BLE001
+        record_failed(artifact_manager, scenario_artifacts, pages, scenario, details, error)
+        raise
+
+
+@pytest.mark.live
+@pytest.mark.admin
+def test_admin_profile_console_card_navigates_to_admin_console(
+    settings,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "admin_profile_console_card_navigates_to_admin_console"
+    details = {}
+
+    try:
+        ui_login(pages, settings.admin_email, settings.admin_password, scenario_artifacts, "admin_card")
+        pages.profile.load()
+        assert pages.profile.has_card("Admin Console")
+        pages.profile.open_card("Admin Console")
+        pages.admin.wait_for_text("Voucher management and order monitoring")
+        wait_for_path(pages, "/admin")
+        scenario_artifacts.save_screenshot("profile_card_admin_console.png", pages.driver)
+
+        details.update(
+            {
+                "email": settings.admin_email,
+                "current_path": pages.admin.current_path(),
+            }
+        )
+        record_verified(artifact_manager, scenario_artifacts, scenario, details)
+    except Exception as error:  # noqa: BLE001
+        record_failed(artifact_manager, scenario_artifacts, pages, scenario, details, error)
+        raise
+
+
+@pytest.mark.live
+@pytest.mark.admin
+def test_admin_rejects_kyc_and_buyer_stays_titiper(
+    settings,
+    services,
+    setup_helper,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "admin_rejects_kyc_and_buyer_stays_titiper"
+    details = {}
+
+    try:
+        buyer = setup_helper.register_user_api(
+            setup_helper.new_user("kyc-reject"),
+            evidence=scenario_artifacts,
+            evidence_name="kyc_reject_buyer_register",
+        )
+        admin = setup_helper.login_existing_user_api(
+            settings.admin_email,
+            settings.admin_password,
+            evidence=scenario_artifacts,
+            evidence_name="kyc_reject_admin_login_api",
+        )
+
+        ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "kyc_reject_buyer")
+        pages.profile.load()
+        pages.profile.submit_kyc(f"https://example.com/kyc/reject-{buyer.user_id}.pdf", "Please review this evidence.")
+        pages.profile.wait_for_notice("KYC submitted for admin review.")
+        scenario_artifacts.save_screenshot("kyc_reject_submitted.png", pages.driver)
+
+        ui_logout_if_needed(pages)
+        ui_login(pages, admin.email, settings.admin_password, scenario_artifacts, "kyc_reject_admin")
+        pages.admin.load()
+        pages.admin.wait_for_user(buyer.email)
+        pages.admin.click_user_action(buyer.email, "Reject KYC")
+        status_text = pages.admin.wait_for_user_status(buyer.email, "TITIPER / REJECTED")
+        scenario_artifacts.save_screenshot("kyc_rejected_by_admin.png", pages.driver)
+
+        rejected_profile = services.auth.me(
+            buyer.token,
+            evidence=scenario_artifacts,
+            evidence_name="kyc_rejected_profile",
+        ).payload
+        assert rejected_profile["role"] == "TITIPER"
+        assert rejected_profile["kycStatus"] == "REJECTED"
+
+        details.update(
+            {
+                "buyer_id": buyer.user_id,
+                "admin_id": admin.user_id,
+                "status_text": status_text,
+                "api_role": rejected_profile["role"],
+                "api_kyc_status": rejected_profile["kycStatus"],
+            }
+        )
+        record_verified(artifact_manager, scenario_artifacts, scenario, details)
+    except Exception as error:  # noqa: BLE001
+        record_failed(artifact_manager, scenario_artifacts, pages, scenario, details, error)
+        raise
+
+
+@pytest.mark.live
+@pytest.mark.admin
+def test_admin_demotes_approved_jastiper_to_titiper(
+    settings,
+    services,
+    setup_helper,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "admin_demotes_approved_jastiper_to_titiper"
+    details = {}
+
+    try:
+        buyer = setup_helper.register_user_api(
+            setup_helper.new_user("kyc-demote"),
+            evidence=scenario_artifacts,
+            evidence_name="kyc_demote_buyer_register",
+        )
+        admin = setup_helper.login_existing_user_api(
+            settings.admin_email,
+            settings.admin_password,
+            evidence=scenario_artifacts,
+            evidence_name="kyc_demote_admin_login_api",
+        )
+
+        ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "kyc_demote_buyer")
+        pages.profile.load()
+        pages.profile.submit_kyc(f"https://example.com/kyc/demote-{buyer.user_id}.pdf", "Upgrade and demote coverage.")
+        pages.profile.wait_for_notice("KYC submitted for admin review.")
+
+        ui_logout_if_needed(pages)
+        ui_login(pages, admin.email, settings.admin_password, scenario_artifacts, "kyc_demote_admin")
+        pages.admin.load()
+        pages.admin.wait_for_user(buyer.email)
+        pages.admin.click_user_action(buyer.email, "Approve KYC")
+        pages.admin.wait_for_user_status(buyer.email, "JASTIPER / APPROVED")
+        scenario_artifacts.save_screenshot("kyc_demote_approved.png", pages.driver)
+
+        pages.admin.click_user_action(buyer.email, "Demote")
+        status_text = pages.admin.wait_for_user_status(buyer.email, "TITIPER / REJECTED")
+        scenario_artifacts.save_screenshot("kyc_demoted_by_admin.png", pages.driver)
+
+        demoted_profile = services.auth.me(
+            buyer.token,
+            evidence=scenario_artifacts,
+            evidence_name="kyc_demoted_profile",
+        ).payload
+        assert demoted_profile["role"] == "TITIPER"
+        assert demoted_profile["kycStatus"] == "REJECTED"
+
+        details.update(
+            {
+                "buyer_id": buyer.user_id,
+                "admin_id": admin.user_id,
+                "status_text": status_text,
+                "api_role": demoted_profile["role"],
+                "api_kyc_status": demoted_profile["kycStatus"],
+            }
+        )
+        record_verified(artifact_manager, scenario_artifacts, scenario, details)
+    except Exception as error:  # noqa: BLE001
+        record_failed(artifact_manager, scenario_artifacts, pages, scenario, details, error)
+        raise
+
+
+@pytest.mark.live
+@pytest.mark.admin
+def test_wallet_failed_topup_does_not_credit_balance(
+    settings,
+    services,
+    setup_helper,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "wallet_failed_topup_does_not_credit_balance"
+    details = {}
+
+    try:
+        buyer = setup_helper.register_user_api(
+            setup_helper.new_user("topup-failed"),
+            evidence=scenario_artifacts,
+            evidence_name="topup_failed_buyer_register",
+        )
+        admin = setup_helper.login_existing_user_api(
+            settings.admin_email,
+            settings.admin_password,
+            evidence=scenario_artifacts,
+            evidence_name="topup_failed_admin_login_api",
+        )
+
+        ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "topup_failed_buyer")
+        pages.wallet.load()
+        assert parse_currency(pages.wallet.balance_text()) == Decimal("0")
+        pages.wallet.top_up(70000)
+        topup_id, topup_message = pages.wallet.wait_for_top_up_request()
+        assert "pending admin verification" in topup_message.lower()
+        scenario_artifacts.save_screenshot("failed_topup_pending.png", pages.driver)
+
+        ui_logout_if_needed(pages)
+        ui_login(pages, admin.email, settings.admin_password, scenario_artifacts, "topup_failed_admin")
+        pages.admin.load()
+        pages.admin.wait_for_topup_request(topup_id, "PENDING")
+        pages.admin.mark_topup_failed(topup_id)
+        pages.admin.wait_for_topup_request(topup_id, "FAILED")
+        scenario_artifacts.save_screenshot("failed_topup_marked_failed.png", pages.driver)
+
+        ui_logout_if_needed(pages)
+        ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "topup_failed_buyer_after")
+        pages.wallet.load()
+        balance_after_failure = parse_currency(pages.wallet.balance_text())
+        transactions = services.wallet.list_transactions(
+            buyer.user_id,
+            token=buyer.token,
+            evidence=scenario_artifacts,
+            evidence_name="topup_failed_transactions",
+        ).payload
+        assert balance_after_failure == Decimal("0")
+        assert all(item["type"] != "TOPUP" for item in transactions)
+        scenario_artifacts.save_screenshot("failed_topup_balance_unchanged.png", pages.driver)
+
+        details.update(
+            {
+                "buyer_id": buyer.user_id,
+                "admin_id": admin.user_id,
+                "topup_id": topup_id,
+                "balance_after_failure": str(balance_after_failure),
+                "transaction_types": [item["type"] for item in transactions],
+            }
+        )
+        record_verified(artifact_manager, scenario_artifacts, scenario, details)
+    except Exception as error:  # noqa: BLE001
+        record_failed(artifact_manager, scenario_artifacts, pages, scenario, details, error)
+        raise
+
+
+@pytest.mark.live
+@pytest.mark.admin
+def test_wallet_failed_withdrawal_does_not_debit_balance(
+    settings,
+    services,
+    setup_helper,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "wallet_failed_withdrawal_does_not_debit_balance"
+    details = {}
+
+    try:
+        buyer = setup_helper.register_user_api(
+            setup_helper.new_user("withdraw-failed"),
+            evidence=scenario_artifacts,
+            evidence_name="withdraw_failed_buyer_register",
+        )
+        admin = setup_helper.login_existing_user_api(
+            settings.admin_email,
+            settings.admin_password,
+            evidence=scenario_artifacts,
+            evidence_name="withdraw_failed_admin_login_api",
+        )
+        setup_helper.top_up_to_balance(
+            buyer,
+            Decimal("90000"),
+            evidence=scenario_artifacts,
+            prefix="withdraw_failed_seed_topup",
+        )
+
+        ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "withdraw_failed_buyer")
+        pages.wallet.load()
+        assert parse_currency(pages.wallet.balance_text()) == Decimal("90000")
+        pages.wallet.withdraw(40000, f"Mandiri failed withdrawal {buyer.user_id}")
+        withdrawal_id, withdrawal_message = pages.wallet.wait_for_withdrawal_request()
+        assert "pending admin verification" in withdrawal_message.lower()
+        scenario_artifacts.save_screenshot("failed_withdrawal_pending.png", pages.driver)
+
+        ui_logout_if_needed(pages)
+        ui_login(pages, admin.email, settings.admin_password, scenario_artifacts, "withdraw_failed_admin")
+        pages.admin.load()
+        pages.admin.wait_for_withdrawal_request(withdrawal_id, "PENDING")
+        pages.admin.mark_withdrawal_failed(withdrawal_id)
+        pages.admin.wait_for_withdrawal_request(withdrawal_id, "FAILED")
+        scenario_artifacts.save_screenshot("failed_withdrawal_marked_failed.png", pages.driver)
+
+        ui_logout_if_needed(pages)
+        ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "withdraw_failed_buyer_after")
+        pages.wallet.load()
+        balance_after_failure = parse_currency(pages.wallet.balance_text())
+        transactions = services.wallet.list_transactions(
+            buyer.user_id,
+            token=buyer.token,
+            evidence=scenario_artifacts,
+            evidence_name="withdraw_failed_transactions",
+        ).payload
+        assert balance_after_failure == Decimal("90000")
+        assert all(item["type"] != "WITHDRAWAL" for item in transactions)
+        scenario_artifacts.save_screenshot("failed_withdrawal_balance_unchanged.png", pages.driver)
+
+        details.update(
+            {
+                "buyer_id": buyer.user_id,
+                "admin_id": admin.user_id,
+                "withdrawal_id": withdrawal_id,
+                "balance_after_failure": str(balance_after_failure),
+                "transaction_types": [item["type"] for item in transactions],
+            }
+        )
+        record_verified(artifact_manager, scenario_artifacts, scenario, details)
+    except Exception as error:  # noqa: BLE001
+        record_failed(artifact_manager, scenario_artifacts, pages, scenario, details, error)
+        raise
+
+
+@pytest.mark.live
+def test_checkout_shipping_address_validation_blocks_submit(
+    settings,
+    setup_helper,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "checkout_shipping_address_validation_blocks_submit"
+    details = {}
+
+    try:
+        buyer = setup_helper.register_user_api(
+            setup_helper.new_user("checkout-validation"),
+            evidence=scenario_artifacts,
+            evidence_name="checkout_validation_buyer_register",
+        )
+        product = setup_helper.choose_product(
+            buyer.token,
+            evidence=scenario_artifacts,
+            evidence_name="checkout_validation_product",
+        )
+        setup_helper.top_up_to_balance(
+            buyer,
+            product.price + Decimal("25000"),
+            evidence=scenario_artifacts,
+            prefix="checkout_validation_topup",
+        )
+
+        ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "checkout_validation")
+        pages.driver.get(f"{settings.frontend_base_url.rstrip('/')}/product/{product.product_id}")
+        pages.product_detail.wait_loaded()
+        pages.product_detail.click_buy_now()
+        pages.checkout.wait_loaded()
+        wait_for_path(pages, "/checkout")
+
+        pages.checkout.set_shipping_address("")
+        pages.checkout.submit()
+        wait_for_path(pages, "/checkout")
+        validation_message = pages.driver.execute_script("return document.querySelector('textarea').validationMessage;")
+        assert validation_message
+        scenario_artifacts.save_screenshot("checkout_address_validation.png", pages.driver)
+
+        details.update(
+            {
+                "buyer_id": buyer.user_id,
+                "product_id": product.product_id,
+                "validation_message": validation_message,
+                "current_path": pages.checkout.current_path(),
+            }
+        )
+        record_verified(artifact_manager, scenario_artifacts, scenario, details)
+    except Exception as error:  # noqa: BLE001
+        record_failed(artifact_manager, scenario_artifacts, pages, scenario, details, error)
         raise

@@ -37,6 +37,9 @@ export default function AdminPage() {
   const [redemptions, setRedemptions] = useState([]);
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
+  const [walletTransactions, setWalletTransactions] = useState([]);
+  const [topUpRequests, setTopUpRequests] = useState([]);
+  const [withdrawalRequests, setWithdrawalRequests] = useState([]);
   const [voucherForm, setVoucherForm] = useState({
     ...EMPTY_VOUCHER_FORM,
     startAt: toLocalDateTimeInput(-1),
@@ -60,18 +63,36 @@ export default function AdminPage() {
       const voucherPromise = adminToken ? api.listAdminVouchers(adminToken) : Promise.resolve([]);
       const redemptionPromise = adminToken ? api.listVoucherRedemptions(adminToken) : Promise.resolve([]);
       const usersPromise = api.listAuthUsers();
-      const [orderData, productData, voucherData, redemptionData, userData] = await Promise.all([
+      const walletTransactionPromise = api.listWalletAdminTransactions();
+      const topUpPromise = api.listWalletTopUps();
+      const withdrawalPromise = api.listWalletWithdrawals();
+      const [
+        orderData,
+        productData,
+        voucherData,
+        redemptionData,
+        userData,
+        walletTransactionData,
+        topUpData,
+        withdrawalData,
+      ] = await Promise.all([
         orderPromise,
         productPromise,
         voucherPromise,
         redemptionPromise,
         usersPromise,
+        walletTransactionPromise,
+        topUpPromise,
+        withdrawalPromise,
       ]);
       setOrders(orderData);
       setProducts(productData);
       setVouchers(voucherData);
       setRedemptions(redemptionData);
       setUsers(userData);
+      setWalletTransactions(walletTransactionData);
+      setTopUpRequests(topUpData);
+      setWithdrawalRequests(withdrawalData);
     } catch (loadError) {
       setError(loadError.message);
     } finally {
@@ -255,6 +276,36 @@ export default function AdminPage() {
       }
       setMessage(`User ${userId} updated.`);
       setUsers(await api.listAuthUsers());
+    } catch (actionError) {
+      setError(actionError.message);
+    } finally {
+      setBusyKey('');
+    }
+  }
+
+  async function handleWalletRequestAction(kind, requestId, outcome) {
+    setBusyKey(`wallet-${kind}-${requestId}-${outcome}`);
+    setError('');
+    setMessage('');
+    try {
+      if (kind === 'topup' && outcome === 'success') {
+        await api.markTopUpSuccess(requestId);
+      } else if (kind === 'topup') {
+        await api.markTopUpFailed(requestId);
+      } else if (outcome === 'success') {
+        await api.markWithdrawalSuccess(requestId);
+      } else {
+        await api.markWithdrawalFailed(requestId);
+      }
+      setMessage(`Wallet request ${requestId} updated.`);
+      const [walletTransactionData, topUpData, withdrawalData] = await Promise.all([
+        api.listWalletAdminTransactions(),
+        api.listWalletTopUps(),
+        api.listWalletWithdrawals(),
+      ]);
+      setWalletTransactions(walletTransactionData);
+      setTopUpRequests(topUpData);
+      setWithdrawalRequests(withdrawalData);
     } catch (actionError) {
       setError(actionError.message);
     } finally {
@@ -752,6 +803,67 @@ export default function AdminPage() {
               </div>
             </article>
           ))}
+        </div>
+      </article>
+
+      <article className="card" data-testid="admin-wallet-monitoring">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Payment Monitoring</p>
+            <h2>Top-up and withdrawal verification</h2>
+          </div>
+          <span className="pill pill--accent">{walletTransactions.length} ledger entries</span>
+        </div>
+        <div className="grid-two">
+          <div className="order-list">
+            <h3>Top-up requests</h3>
+            {topUpRequests.map((request) => (
+              <article className="service-panel" key={`topup-${request.id}`}>
+                <div className="service-panel__top">
+                  <div>
+                    <strong>Top-up #{request.id}</strong>
+                    <p className="muted">User {request.userId} | {formatCurrency(request.amount)}</p>
+                  </div>
+                  <span className={`status-pill status-pill--${slugStatus(request.status)}`}>{request.status}</span>
+                </div>
+                {request.status === 'PENDING' && (
+                  <div className="button-row">
+                    <button className="button button--secondary" disabled={busyKey.startsWith(`wallet-topup-${request.id}`)} onClick={() => handleWalletRequestAction('topup', request.id, 'success')} type="button">
+                      Mark success
+                    </button>
+                    <button className="button button--ghost" disabled={busyKey.startsWith(`wallet-topup-${request.id}`)} onClick={() => handleWalletRequestAction('topup', request.id, 'failed')} type="button">
+                      Mark failed
+                    </button>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+          <div className="order-list">
+            <h3>Withdrawal requests</h3>
+            {withdrawalRequests.map((request) => (
+              <article className="service-panel" key={`withdraw-${request.id}`}>
+                <div className="service-panel__top">
+                  <div>
+                    <strong>Withdrawal #{request.id}</strong>
+                    <p className="muted">User {request.userId} | {formatCurrency(request.amount)}</p>
+                  </div>
+                  <span className={`status-pill status-pill--${slugStatus(request.status)}`}>{request.status}</span>
+                </div>
+                <p className="muted">{request.destination}</p>
+                {request.status === 'PENDING' && (
+                  <div className="button-row">
+                    <button className="button button--secondary" disabled={busyKey.startsWith(`wallet-withdraw-${request.id}`)} onClick={() => handleWalletRequestAction('withdraw', request.id, 'success')} type="button">
+                      Mark success
+                    </button>
+                    <button className="button button--ghost" disabled={busyKey.startsWith(`wallet-withdraw-${request.id}`)} onClick={() => handleWalletRequestAction('withdraw', request.id, 'failed')} type="button">
+                      Mark failed
+                    </button>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
         </div>
       </article>
     </section>

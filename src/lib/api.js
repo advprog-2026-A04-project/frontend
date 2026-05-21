@@ -325,10 +325,6 @@ export const api = {
       body: { userId, amount },
     });
 
-    await request('wallet', `/wallet/topup/${topUpRequest.requestId}/mark-success`, {
-      method: 'POST',
-    });
-
     const [wallet, transactions] = await Promise.all([
       this.getWallet(userId),
       this.listWalletTransactions(userId),
@@ -339,6 +335,52 @@ export const api = {
       transactions,
       requestId: topUpRequest.requestId,
     };
+  },
+  async withdrawWallet(userId, amount, destination) {
+    const withdrawalRequest = await request('wallet', '/wallet/withdraw', {
+      method: 'POST',
+      body: { userId, amount, destination },
+    });
+
+    const [wallet, transactions] = await Promise.all([
+      this.getWallet(userId),
+      this.listWalletTransactions(userId),
+    ]);
+
+    return {
+      wallet,
+      transactions,
+      requestId: withdrawalRequest.requestId,
+    };
+  },
+  listWalletAdminTransactions() {
+    return request('wallet', '/wallet/admin/transactions');
+  },
+  listWalletTopUps() {
+    return request('wallet', '/wallet/admin/topups');
+  },
+  listWalletWithdrawals() {
+    return request('wallet', '/wallet/admin/withdrawals');
+  },
+  markTopUpSuccess(requestId) {
+    return request('wallet', `/wallet/topup/${requestId}/mark-success`, {
+      method: 'POST',
+    });
+  },
+  markTopUpFailed(requestId) {
+    return request('wallet', `/wallet/topup/${requestId}/mark-failed`, {
+      method: 'POST',
+    });
+  },
+  markWithdrawalSuccess(requestId) {
+    return request('wallet', `/wallet/withdraw/${requestId}/mark-success`, {
+      method: 'POST',
+    });
+  },
+  markWithdrawalFailed(requestId) {
+    return request('wallet', `/wallet/withdraw/${requestId}/mark-failed`, {
+      method: 'POST',
+    });
   },
   listOrders() {
     return request('order', '/orders/my');

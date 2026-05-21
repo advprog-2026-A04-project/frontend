@@ -15,7 +15,7 @@ class CheckoutPage(BasePage):
         self.pause_checkpoint("checkout_loaded")
 
     def set_shipping_address(self, address: str) -> None:
-        self.fill_css("textarea", address)
+        self.fill_xpath_js("//textarea", address)
 
     def set_quantity(self, quantity: int) -> None:
         self.fill_xpath("//label[.//span[normalize-space()='Quantity']]//input", str(quantity))

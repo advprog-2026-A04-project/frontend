@@ -39,7 +39,22 @@ class CatalogPage(BasePage):
         return len(self.product_cards())
 
     def search(self, query: str) -> None:
-        self.fill_css("input[placeholder^='Search limited items']", query)
+        field = self.wait.until(
+            EC.visibility_of_element_located((By.CSS_SELECTOR, "input[placeholder^='Search limited items']"))
+        )
+        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", field)
+        self.driver.execute_script(
+            """
+            const element = arguments[0];
+            const value = arguments[1];
+            const descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), 'value');
+            descriptor.set.call(element, value);
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+            element.dispatchEvent(new Event('change', { bubbles: true }));
+            """,
+            field,
+            query,
+        )
         self.wait.until(
             lambda _driver: self.driver.find_element(By.CSS_SELECTOR, "input[placeholder^='Search limited items']").get_attribute("value")
             == query

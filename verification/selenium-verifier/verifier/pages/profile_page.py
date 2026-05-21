@@ -53,6 +53,11 @@ class ProfilePage(BasePage):
         self.set_full_name(full_name)
         self.save_profile()
 
+    def submit_kyc(self, document_url: str, note: str) -> None:
+        self.fill_xpath_js("//input[@data-testid='kyc-document-url']", document_url)
+        self.fill_xpath_js("//textarea[@data-testid='kyc-note']", note)
+        self.click_xpath("//button[@data-testid='submit-kyc-button']")
+
     def has_card(self, title: str) -> bool:
         elements = self.driver.find_elements(
             By.XPATH,

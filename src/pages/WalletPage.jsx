@@ -10,10 +10,13 @@ export default function WalletPage() {
   const [wallet, setWallet] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [amount, setAmount] = useState(1000000);
+  const [withdrawAmount, setWithdrawAmount] = useState(100000);
+  const [withdrawDestination, setWithdrawDestination] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
 
   const loadWalletState = useCallback(async () => {
     setLoading(true);
@@ -48,6 +51,13 @@ export default function WalletPage() {
         .reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0),
     [transactions],
   );
+  const withdrawalTotal = useMemo(
+    () =>
+      transactions
+        .filter((transaction) => transaction.type === 'WITHDRAWAL')
+        .reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0),
+    [transactions],
+  );
 
   async function handleTopUp(event) {
     event.preventDefault();
@@ -59,11 +69,30 @@ export default function WalletPage() {
       const result = await api.topUpWallet(user.id, amount);
       setWallet(result.wallet);
       setTransactions(result.transactions);
-      setMessage(`Top-up request ${result.requestId} was marked successful.`);
+      setMessage(`Top-up request ${result.requestId} is pending admin verification.`);
     } catch (submissionError) {
       setError(submissionError.message);
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleWithdraw(event) {
+    event.preventDefault();
+    setWithdrawing(true);
+    setError('');
+    setMessage('');
+
+    try {
+      const result = await api.withdrawWallet(user.id, withdrawAmount, withdrawDestination);
+      setWallet(result.wallet);
+      setTransactions(result.transactions);
+      setMessage(`Withdrawal request ${result.requestId} is pending admin verification.`);
+      setWithdrawDestination('');
+    } catch (submissionError) {
+      setError(submissionError.message);
+    } finally {
+      setWithdrawing(false);
     }
   }
 
@@ -94,6 +123,10 @@ export default function WalletPage() {
                   <strong className="text-lg text-fuchsia-300">-{formatCurrency(paymentTotal)}</strong>
                 </div>
                 <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-slate-400">Total withdrawn</span>
+                  <strong className="text-lg text-amber-300">-{formatCurrency(withdrawalTotal)}</strong>
+                </div>
+                <div className="flex items-center justify-between gap-3">
                   <span className="text-sm text-slate-400">Entries</span>
                   <strong className="text-lg text-white">{transactions.length}</strong>
                 </div>
@@ -102,6 +135,9 @@ export default function WalletPage() {
           </div>
 
           <div className="space-y-6">
+            {message && <div className="rounded-[20px] border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm text-emerald-200">{message}</div>}
+            {error && <div className="rounded-[20px] border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200">{error}</div>}
+
             <article className="rounded-[30px] border border-white/10 bg-white/5 p-8 backdrop-blur-md">
               <div className="mb-6 flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan/15 text-cyan">
@@ -109,7 +145,7 @@ export default function WalletPage() {
                 </div>
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Top up</p>
-                  <h2 className="text-2xl font-black text-white">Add balance instantly</h2>
+                  <h2 className="text-2xl font-black text-white">Request balance top up</h2>
                 </div>
               </div>
 
@@ -139,9 +175,6 @@ export default function WalletPage() {
                   ))}
                 </div>
 
-                {message && <div className="rounded-[20px] border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm text-emerald-200">{message}</div>}
-                {error && <div className="rounded-[20px] border border-rose-400/20 bg-rose-500/10 p-4 text-sm text-rose-200">{error}</div>}
-
                 <button
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan to-blue-500 px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-[#0B0914] shadow-[0_0_22px_rgba(0,240,255,0.35)] disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={submitting}
@@ -149,6 +182,53 @@ export default function WalletPage() {
                 >
                   <span className="material-symbols-outlined text-base">account_balance_wallet</span>
                   {submitting ? 'Processing...' : 'Top Up Wallet'}
+                </button>
+              </form>
+            </article>
+
+            <article className="rounded-[30px] border border-white/10 bg-white/5 p-8 backdrop-blur-md">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-300">
+                  <span className="material-symbols-outlined">payments</span>
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Withdraw</p>
+                  <h2 className="text-2xl font-black text-white">Request balance withdrawal</h2>
+                </div>
+              </div>
+
+              <form className="space-y-5" onSubmit={handleWithdraw}>
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-bold text-white">Amount</span>
+                  <input
+                    className="rounded-[20px] border border-white/10 bg-[#13112A]/75 px-5 py-4 text-white outline-none"
+                    min={10000}
+                    step={10000}
+                    type="number"
+                    value={withdrawAmount}
+                    onChange={(event) => setWithdrawAmount(Number(event.target.value))}
+                  />
+                </label>
+
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-bold text-white">Destination</span>
+                  <input
+                    className="rounded-[20px] border border-white/10 bg-[#13112A]/75 px-5 py-4 text-white outline-none placeholder:text-slate-500"
+                    placeholder="Bank account or e-wallet destination"
+                    type="text"
+                    value={withdrawDestination}
+                    onChange={(event) => setWithdrawDestination(event.target.value)}
+                    required
+                  />
+                </label>
+
+                <button
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-amber-300/30 bg-amber-300/10 px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={withdrawing}
+                  type="submit"
+                >
+                  <span className="material-symbols-outlined text-base">outbox</span>
+                  {withdrawing ? 'Submitting withdrawal...' : 'Request Withdrawal'}
                 </button>
               </form>
             </article>
@@ -185,7 +265,9 @@ export default function WalletPage() {
                                 ? 'add'
                                 : transaction.type === 'PAYMENT'
                                   ? 'shopping_cart'
-                                  : 'undo'}
+                                  : transaction.type === 'WITHDRAWAL'
+                                    ? 'outbox'
+                                    : 'undo'}
                             </span>
                           </div>
                           <div>

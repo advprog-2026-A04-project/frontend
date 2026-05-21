@@ -271,4 +271,84 @@ describe('frontend milestone flow', () => {
       fullName: 'Demo Buyer Refined',
     });
   });
+
+  it('submits a withdrawal request from the wallet page without changing balance immediately', async () => {
+    window.history.pushState({}, '', '/wallet');
+    localStorage.setItem('json.sessionToken', 'session-wallet');
+    localStorage.setItem(
+      'json.sessionUser',
+      JSON.stringify({
+        id: 1000,
+        email: 'demo@json.app',
+        username: 'Demo Buyer',
+        fullName: 'Demo Buyer',
+        role: 'TITIPER',
+      }),
+    );
+
+    installFetchMock({
+      'GET /auth/me': {
+        body: {
+          id: 1000,
+          email: 'demo@json.app',
+          username: 'Demo Buyer',
+          fullName: 'Demo Buyer',
+          role: 'TITIPER',
+        },
+      },
+      'POST /wallet/balance': ({ body }) => {
+        expect(body).toEqual({ userId: 1000 });
+        return {
+          body: {
+            userId: 1000,
+            balance: 180000,
+            currency: 'IDR',
+          },
+        };
+      },
+      'POST /wallet/transactions': ({ body }) => {
+        expect(body).toEqual({ userId: 1000 });
+        return {
+          body: [
+            {
+              id: 1,
+              userId: 1000,
+              type: 'TOPUP',
+              status: 'SUCCESS',
+              amount: 180000,
+              refType: 'TOPUP_REQUEST',
+              refId: 7,
+              createdAt: '2026-05-22T00:00:00Z',
+            },
+          ],
+        };
+      },
+      'POST /wallet/withdraw': ({ body }) => {
+        expect(body).toEqual({
+          userId: 1000,
+          amount: 50000,
+          destination: 'BCA 1234567890',
+        });
+        return {
+          status: 201,
+          body: {
+            requestId: 41,
+            success: true,
+          },
+        };
+      },
+    });
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /request balance withdrawal/i })).toBeInTheDocument();
+    await user.clear(screen.getAllByLabelText(/amount/i)[1]);
+    await user.type(screen.getAllByLabelText(/amount/i)[1], '50000');
+    await user.type(screen.getByLabelText(/destination/i), 'BCA 1234567890');
+    await user.click(screen.getByRole('button', { name: /request withdrawal/i }));
+
+    expect(await screen.findByText(/withdrawal request 41 is pending admin verification/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /rp\s*180\.000/i })).toBeInTheDocument();
+  });
 });

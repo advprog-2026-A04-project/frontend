@@ -9,22 +9,43 @@ from .base_page import BasePage
 class WalletPage(BasePage):
     def load(self) -> None:
         self.open("/wallet")
-        self.wait_for_text("Add balance instantly")
+        self.wait_for_text("Request balance top up")
         self.pause_checkpoint("wallet_loaded")
 
     def balance_text(self) -> str:
         return self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".card--hero h1"))).text
 
     def top_up(self, amount: int) -> None:
-        self.fill_css("input[type='number']", str(amount))
+        self.fill_xpath_js("//article[.//h2[normalize-space()='Request balance top up']]//input[@type='number']", str(amount))
         self.click_xpath("//button[contains(normalize-space(), 'Top Up Wallet')]")
 
-    def wait_for_top_up_success(self) -> str:
+    def wait_for_top_up_request(self) -> tuple[int, str]:
         element = self.wait.until(
-            EC.visibility_of_element_located((By.XPATH, "//*[contains(normalize-space(), 'was marked successful.')]"))
+            EC.visibility_of_element_located((By.XPATH, "//*[contains(normalize-space(), 'pending admin verification')]"))
         )
+        text = element.text
+        marker = "Top-up request "
+        request_id = int(text.split(marker, 1)[1].split(" ", 1)[0])
         self.pause_checkpoint("wallet_topup_success")
-        return element.text
+        return request_id, text
+
+    def wait_for_top_up_success(self) -> str:
+        return self.wait_for_top_up_request()[1]
+
+    def withdraw(self, amount: int, destination: str) -> None:
+        self.fill_xpath_js("//article[.//h2[normalize-space()='Request balance withdrawal']]//input[@type='number']", str(amount))
+        self.fill_xpath_js("//article[.//h2[normalize-space()='Request balance withdrawal']]//input[@type='text']", destination)
+        self.click_xpath("//button[contains(normalize-space(), 'Request Withdrawal')]")
+
+    def wait_for_withdrawal_request(self) -> tuple[int, str]:
+        element = self.wait.until(
+            EC.visibility_of_element_located((By.XPATH, "//*[contains(normalize-space(), 'Withdrawal request') and contains(normalize-space(), 'pending admin verification')]"))
+        )
+        text = element.text
+        marker = "Withdrawal request "
+        request_id = int(text.split(marker, 1)[1].split(" ", 1)[0])
+        self.pause_checkpoint("wallet_withdrawal_request")
+        return request_id, text
 
     def transaction_types(self) -> list[str]:
         return [
