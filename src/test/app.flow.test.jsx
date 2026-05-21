@@ -26,7 +26,9 @@ function installFetchMock(routes) {
     }
 
     const body = init.body ? JSON.parse(init.body) : undefined;
-    const result = typeof handler === 'function' ? await handler({ body, parsed }) : handler;
+    const result = typeof handler === 'function'
+      ? await handler({ body, headers: init.headers || {}, parsed })
+      : handler;
 
     return jsonResponse(result.body ?? result, result.status ?? 200);
   });
@@ -146,7 +148,7 @@ describe('frontend milestone flow', () => {
           },
         ],
       },
-      'POST /orders/checkout': ({ body }) => {
+      'POST /orders/checkout': ({ body, headers }) => {
         expect(body).toEqual({
           address: 'Jl. Mawar No. 1, Jakarta',
           voucherCode: 'MILESTONE10',
@@ -157,6 +159,7 @@ describe('frontend milestone flow', () => {
             },
           ],
         });
+        expect(headers['Idempotency-Key']).toContain(`checkout:1000:${product.id}:`);
         return {
           status: 201,
           body: {

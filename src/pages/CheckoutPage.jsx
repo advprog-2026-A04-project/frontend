@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useMemo, useState } from 'react';
+import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import LoadingState from '../components/LoadingState';
 import PageShell from '../components/PageShell';
@@ -26,6 +26,7 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const checkoutKeyRef = useRef('');
 
   const subtotal = useMemo(() => (product ? product.price * form.quantity : 0), [form.quantity, product]);
   const normalizedVoucherCode = form.voucherCode.trim().toUpperCase();
@@ -90,6 +91,10 @@ export default function CheckoutPage() {
     };
   }, [productId, user.id]);
 
+  useEffect(() => {
+    checkoutKeyRef.current = '';
+  }, [productId, form.quantity, form.shippingAddress, form.voucherCode]);
+
   async function handleSubmit(event) {
     event?.preventDefault?.();
     setSubmitting(true);
@@ -101,11 +106,16 @@ export default function CheckoutPage() {
         throw new Error('Product is not ready for checkout yet.');
       }
 
+      if (!checkoutKeyRef.current) {
+        checkoutKeyRef.current = buildCheckoutKey(user.id, product.id);
+      }
+
       const result = await api.checkout({
         productId: product.id,
         quantity: form.quantity,
         shippingAddress: form.shippingAddress,
         voucherCode: form.voucherCode,
+        idempotencyKey: checkoutKeyRef.current,
       });
 
       startTransition(() => {
@@ -328,4 +338,11 @@ export default function CheckoutPage() {
       </section>
     </PageShell>
   );
+}
+
+function buildCheckoutKey(userId, productId) {
+  const randomPart = typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return `checkout:${userId}:${productId}:${randomPart}`;
 }

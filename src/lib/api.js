@@ -3,11 +3,11 @@ const JSON_HEADERS = {
 };
 
 const DEPLOYED_SERVICE_URLS = {
-  auth: 'https://auth-profile-api-osvihgaoya-uc.a.run.app',
-  inventory: 'https://inventory-api-osvihgaoya-uc.a.run.app',
-  wallet: 'https://wallet-api-osvihgaoya-uc.a.run.app',
-  order: 'https://order-api-osvihgaoya-uc.a.run.app',
-  voucher: 'https://voucher-promo-api-osvihgaoya-uc.a.run.app',
+  auth: 'https://auth-profile-api-383620816191.us-central1.run.app',
+  inventory: 'https://inventory-api-383620816191.us-central1.run.app',
+  wallet: 'https://wallet-api-383620816191.us-central1.run.app',
+  order: 'https://order-api-383620816191.us-central1.run.app',
+  voucher: 'https://voucher-promo-api-383620816191.us-central1.run.app',
 };
 
 const LOCAL_SERVICE_URLS = {
@@ -280,9 +280,10 @@ export const api = {
   getOrder(orderId) {
     return request('order', `/orders/${orderId}`);
   },
-  checkout({ productId, quantity, shippingAddress, voucherCode }) {
+  checkout({ productId, quantity, shippingAddress, voucherCode, idempotencyKey }) {
     return request('order', '/orders/checkout', {
       method: 'POST',
+      headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
       body: {
         address: shippingAddress,
         voucherCode: voucherCode?.trim() || null,
