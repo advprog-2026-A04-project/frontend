@@ -225,6 +225,44 @@ export const api = {
       body: payload,
     });
   },
+  submitKyc(payload) {
+    return request('auth', '/profile/kyc', {
+      method: 'POST',
+      body: payload,
+    });
+  },
+  listAuthUsers() {
+    return request('auth', '/profile/admin/users');
+  },
+  approveKyc(userId, note = '') {
+    return request('auth', `/profile/admin/users/${userId}/kyc/approve`, {
+      method: 'POST',
+      body: { note },
+    });
+  },
+  rejectKyc(userId, note = '') {
+    return request('auth', `/profile/admin/users/${userId}/kyc/reject`, {
+      method: 'POST',
+      body: { note },
+    });
+  },
+  banUser(userId, note = '') {
+    return request('auth', `/profile/admin/users/${userId}/ban`, {
+      method: 'POST',
+      body: { note },
+    });
+  },
+  unbanUser(userId) {
+    return request('auth', `/profile/admin/users/${userId}/unban`, {
+      method: 'POST',
+    });
+  },
+  demoteUser(userId, note = '') {
+    return request('auth', `/profile/admin/users/${userId}/demote`, {
+      method: 'POST',
+      body: { note },
+    });
+  },
   listProducts(query = '') {
     const suffix = query ? `?keyword=${encodeURIComponent(query)}` : '';
     return request('inventory', `/api/products/search${suffix}`);
@@ -319,6 +357,12 @@ export const api = {
   listAdminVouchers(adminToken, status = '') {
     const suffix = status ? `?status=${encodeURIComponent(status)}` : '';
     return request('voucher', `/admin/vouchers${suffix}`, {
+      headers: adminHeaders(adminToken),
+      token: '',
+    });
+  },
+  listVoucherRedemptions(adminToken) {
+    return request('voucher', '/admin/vouchers/redemptions', {
       headers: adminHeaders(adminToken),
       token: '',
     });

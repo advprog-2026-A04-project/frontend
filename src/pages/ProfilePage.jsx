@@ -5,7 +5,7 @@ import { useSession } from '../context/SessionContext';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { logout, updateProfile, user } = useSession();
+  const { logout, submitKyc, updateProfile, user } = useSession();
   const avatarSeed = encodeURIComponent(user?.username || user?.email || 'json');
   const [form, setForm] = useState({
     username: user?.username || '',
@@ -14,6 +14,8 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
+  const [kycForm, setKycForm] = useState({ documentUrl: '', note: '' });
+  const [submittingKyc, setSubmittingKyc] = useState(false);
 
   useEffect(() => {
     setForm({
@@ -46,6 +48,23 @@ export default function ProfilePage() {
     }
   }
 
+  async function handleSubmitKyc(event) {
+    event.preventDefault();
+    setSubmittingKyc(true);
+    setError('');
+    setMessage('');
+
+    try {
+      await submitKyc(kycForm);
+      setMessage('KYC submitted for admin review.');
+      setKycForm({ documentUrl: '', note: '' });
+    } catch (submissionError) {
+      setError(submissionError.message);
+    } finally {
+      setSubmittingKyc(false);
+    }
+  }
+
   return (
     <PageShell active="profile">
       <section className="space-y-8">
@@ -70,8 +89,13 @@ export default function ProfilePage() {
                     {user?.role}
                   </span>
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-300">
-                    Auth Synced
+                    KYC {user?.kycStatus || 'NOT_SUBMITTED'}
                   </span>
+                  {user?.banned && (
+                    <span className="rounded-full border border-rose-400/20 bg-rose-500/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-rose-200">
+                      Banned
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -141,6 +165,49 @@ export default function ProfilePage() {
             </form>
           </article>
         </div>
+
+        <article className="rounded-[28px] border border-white/10 bg-white/5 p-8 backdrop-blur-md" data-testid="kyc-panel">
+          <div className="mb-6">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">Jastiper KYC</p>
+            <h2 className="mt-2 text-2xl font-black text-white">Submit upgrade evidence.</h2>
+            <p className="mt-3 text-sm text-slate-400">
+              Current status: {user?.kycStatus || 'NOT_SUBMITTED'}
+            </p>
+          </div>
+          <form className="space-y-5" onSubmit={handleSubmitKyc}>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-bold text-white">Document URL</span>
+              <input
+                className="rounded-[20px] border border-white/10 bg-white/5 px-5 py-4 text-white outline-none placeholder:text-slate-500"
+                data-testid="kyc-document-url"
+                type="url"
+                value={kycForm.documentUrl}
+                onChange={(event) => setKycForm((current) => ({ ...current, documentUrl: event.target.value }))}
+                placeholder="https://..."
+                required
+              />
+            </label>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-bold text-white">Note</span>
+              <textarea
+                className="min-h-24 rounded-[20px] border border-white/10 bg-white/5 px-5 py-4 text-white outline-none placeholder:text-slate-500"
+                data-testid="kyc-note"
+                value={kycForm.note}
+                onChange={(event) => setKycForm((current) => ({ ...current, note: event.target.value }))}
+                placeholder="Tell admin why this account should become a Jastiper"
+              />
+            </label>
+            <button
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan to-blue-500 px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-[#0B0914] shadow-[0_0_22px_rgba(0,240,255,0.35)] disabled:cursor-not-allowed disabled:opacity-50"
+              data-testid="submit-kyc-button"
+              disabled={submittingKyc}
+              type="submit"
+            >
+              <span className="material-symbols-outlined text-base">verified_user</span>
+              {submittingKyc ? 'Submitting KYC...' : 'Submit KYC'}
+            </button>
+          </form>
+        </article>
 
         <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
           <Link className="rounded-[24px] border border-white/10 bg-white/5 p-6 transition-colors hover:border-cyan/40 hover:bg-white/10" to="/wallet">
