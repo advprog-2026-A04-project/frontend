@@ -8,10 +8,11 @@ import HomePage from './pages/HomePage';
 import JastiperOrdersPage from './pages/JastiperOrdersPage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
+import OrderDetailPage from './pages/OrderDetailPage';
 import OrderResultPage from './pages/OrderResultPage';
 import OrdersPage from './pages/OrdersPage';
-import ProfilePage from './pages/ProfilePage';
 import ProductDetailPage from './pages/ProductDetailPage';
+import ProfilePage from './pages/ProfilePage';
 import RegisterPage from './pages/RegisterPage';
 import WalletPage from './pages/WalletPage';
 
@@ -32,7 +33,7 @@ function App() {
             <Route element={<CheckoutPage />} path="/checkout" />
             <Route element={<WalletPage />} path="/wallet" />
             <Route element={<OrdersPage />} path="/orders" />
-            <Route element={<OrderResultPage />} path="/orders/:orderId" />
+            <Route element={<OrderDetailPage />} path="/orders/:orderId" />
             <Route element={<OrderResultPage />} path="/success" />
             <Route element={<ProfilePage />} path="/profile" />
           </Route>
