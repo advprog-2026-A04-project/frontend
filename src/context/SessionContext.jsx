@@ -13,6 +13,18 @@ function clearPersistedSession() {
   localStorage.removeItem('json.sessionUser');
 }
 
+function toSessionUser(profile) {
+  return {
+    id: profile.id,
+    email: profile.email,
+    username: profile.username,
+    fullName: profile.fullName,
+    role: profile.role,
+    kycStatus: profile.kycStatus,
+    banned: profile.banned,
+  };
+}
+
 export function SessionProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('json.sessionToken') || '');
   const [user, setUser] = useState(() => {
@@ -57,13 +69,7 @@ export function SessionProvider({ children }) {
 
   async function login(credentials) {
     const session = await api.login(credentials);
-    const nextUser = {
-      id: session.id,
-      email: session.email,
-      username: session.username,
-      fullName: session.fullName,
-      role: session.role,
-    };
+    const nextUser = toSessionUser(session);
 
     setToken(session.token);
     setUser(nextUser);
@@ -76,6 +82,24 @@ export function SessionProvider({ children }) {
     return {
       message: 'Registration successful. Log in with the account you just created.',
     };
+  }
+
+  async function updateProfile(payload) {
+    const profile = await api.updateProfile(payload);
+    const nextUser = toSessionUser(profile);
+
+    setUser(nextUser);
+    persistSession(token, nextUser);
+    return nextUser;
+  }
+
+  async function submitKyc(payload) {
+    const profile = await api.submitKyc(payload);
+    const nextUser = toSessionUser(profile);
+
+    setUser(nextUser);
+    persistSession(token, nextUser);
+    return nextUser;
   }
 
   async function logout() {
@@ -94,6 +118,8 @@ export function SessionProvider({ children }) {
         isAuthenticated: Boolean(user && token),
         login,
         register,
+        updateProfile,
+        submitKyc,
         logout,
       }}
     >

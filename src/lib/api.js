@@ -3,11 +3,11 @@ const JSON_HEADERS = {
 };
 
 const DEPLOYED_SERVICE_URLS = {
-  auth: 'https://auth-profile-api-osvihgaoya-uc.a.run.app',
-  inventory: 'https://inventory-api-osvihgaoya-uc.a.run.app',
-  wallet: 'https://wallet-api-osvihgaoya-uc.a.run.app',
-  order: 'https://order-api-osvihgaoya-uc.a.run.app',
-  voucher: 'https://voucher-promo-api-osvihgaoya-uc.a.run.app',
+  auth: 'https://auth-profile-api-383620816191.us-central1.run.app',
+  inventory: 'https://inventory-api-383620816191.us-central1.run.app',
+  wallet: 'https://wallet-api-383620816191.us-central1.run.app',
+  order: 'https://order-api-383620816191.us-central1.run.app',
+  voucher: 'https://voucher-promo-api-383620816191.us-central1.run.app',
 };
 
 const LOCAL_SERVICE_URLS = {
@@ -219,6 +219,50 @@ export const api = {
   getCurrentUser(token) {
     return request('auth', '/auth/me', { token });
   },
+  updateProfile(payload) {
+    return request('auth', '/profile', {
+      method: 'PUT',
+      body: payload,
+    });
+  },
+  submitKyc(payload) {
+    return request('auth', '/profile/kyc', {
+      method: 'POST',
+      body: payload,
+    });
+  },
+  listAuthUsers() {
+    return request('auth', '/profile/admin/users');
+  },
+  approveKyc(userId, note = '') {
+    return request('auth', `/profile/admin/users/${userId}/kyc/approve`, {
+      method: 'POST',
+      body: { note },
+    });
+  },
+  rejectKyc(userId, note = '') {
+    return request('auth', `/profile/admin/users/${userId}/kyc/reject`, {
+      method: 'POST',
+      body: { note },
+    });
+  },
+  banUser(userId, note = '') {
+    return request('auth', `/profile/admin/users/${userId}/ban`, {
+      method: 'POST',
+      body: { note },
+    });
+  },
+  unbanUser(userId) {
+    return request('auth', `/profile/admin/users/${userId}/unban`, {
+      method: 'POST',
+    });
+  },
+  demoteUser(userId, note = '') {
+    return request('auth', `/profile/admin/users/${userId}/demote`, {
+      method: 'POST',
+      body: { note },
+    });
+  },
   listProducts(query = '') {
     const suffix = query ? `?keyword=${encodeURIComponent(query)}` : '';
     return request('inventory', `/api/products/search${suffix}`);
@@ -311,9 +355,10 @@ export const api = {
   getOrder(orderId) {
     return request('order', `/orders/${orderId}`);
   },
-  checkout({ productId, quantity, shippingAddress, voucherCode }) {
+  checkout({ productId, quantity, shippingAddress, voucherCode, idempotencyKey }) {
     return request('order', '/orders/checkout', {
       method: 'POST',
+      headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
       body: {
         address: shippingAddress,
         voucherCode: voucherCode?.trim() || null,
@@ -349,6 +394,12 @@ export const api = {
   listAdminVouchers(adminToken, status = '') {
     const suffix = status ? `?status=${encodeURIComponent(status)}` : '';
     return request('voucher', `/admin/vouchers${suffix}`, {
+      headers: adminHeaders(adminToken),
+      token: '',
+    });
+  },
+  listVoucherRedemptions(adminToken) {
+    return request('voucher', '/admin/vouchers/redemptions', {
       headers: adminHeaders(adminToken),
       token: '',
     });

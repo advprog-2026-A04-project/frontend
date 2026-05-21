@@ -34,6 +34,8 @@ export default function AdminPage() {
   const [adminToken, setAdminToken] = useState('');
   const [orders, setOrders] = useState([]);
   const [vouchers, setVouchers] = useState([]);
+  const [redemptions, setRedemptions] = useState([]);
+  const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
   const [voucherForm, setVoucherForm] = useState({
     ...EMPTY_VOUCHER_FORM,
@@ -56,10 +58,20 @@ export default function AdminPage() {
       const orderPromise = api.listAdminOrders();
       const productPromise = api.listAdminProducts();
       const voucherPromise = adminToken ? api.listAdminVouchers(adminToken) : Promise.resolve([]);
-      const [orderData, productData, voucherData] = await Promise.all([orderPromise, productPromise, voucherPromise]);
+      const redemptionPromise = adminToken ? api.listVoucherRedemptions(adminToken) : Promise.resolve([]);
+      const usersPromise = api.listAuthUsers();
+      const [orderData, productData, voucherData, redemptionData, userData] = await Promise.all([
+        orderPromise,
+        productPromise,
+        voucherPromise,
+        redemptionPromise,
+        usersPromise,
+      ]);
       setOrders(orderData);
       setProducts(productData);
       setVouchers(voucherData);
+      setRedemptions(redemptionData);
+      setUsers(userData);
     } catch (loadError) {
       setError(loadError.message);
     } finally {
@@ -218,6 +230,31 @@ export default function AdminPage() {
       await api.cancelOrder(orderId);
       setMessage(`Order ${orderId} was cancelled and refunded.`);
       setOrders(await api.listAdminOrders());
+    } catch (actionError) {
+      setError(actionError.message);
+    } finally {
+      setBusyKey('');
+    }
+  }
+
+  async function handleUserAction(userId, action) {
+    setBusyKey(`user-${userId}-${action}`);
+    setError('');
+    setMessage('');
+    try {
+      if (action === 'approve') {
+        await api.approveKyc(userId, 'Approved during admin review.');
+      } else if (action === 'reject') {
+        await api.rejectKyc(userId, 'Rejected during admin review.');
+      } else if (action === 'ban') {
+        await api.banUser(userId, 'Banned during admin review.');
+      } else if (action === 'unban') {
+        await api.unbanUser(userId);
+      } else if (action === 'demote') {
+        await api.demoteUser(userId, 'Demoted during admin review.');
+      }
+      setMessage(`User ${userId} updated.`);
+      setUsers(await api.listAuthUsers());
     } catch (actionError) {
       setError(actionError.message);
     } finally {
@@ -622,6 +659,96 @@ export default function AdminPage() {
                     Cancel and refund
                   </button>
                 )}
+              </div>
+            </article>
+          ))}
+        </div>
+      </article>
+
+      <article className="card" data-testid="voucher-redemption-audit">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Voucher Audit</p>
+            <h2>Redemption history</h2>
+          </div>
+          <span className="pill pill--accent">{redemptions.length} claims</span>
+        </div>
+        {!adminToken ? (
+          <p className="muted">Enter the voucher admin token to load redemption history.</p>
+        ) : redemptions.length === 0 ? (
+          <p className="muted">No voucher redemptions have been recorded yet.</p>
+        ) : (
+          <div className="order-list">
+            {redemptions.map((redemption) => (
+              <article className="service-panel" key={redemption.id || `${redemption.code}-${redemption.orderId}`}>
+                <div className="service-panel__top">
+                  <div>
+                    <strong>{redemption.code}</strong>
+                    <p className="muted">Order {redemption.orderId}</p>
+                  </div>
+                  <span className="pill">Buyer {redemption.buyerId ?? '-'}</span>
+                </div>
+                <div className="summary-list">
+                  <div className="summary-row">
+                    <span>Order amount</span>
+                    <strong>{formatCurrency(redemption.orderAmount)}</strong>
+                  </div>
+                  <div className="summary-row">
+                    <span>Discount</span>
+                    <strong>{formatCurrency(redemption.discountApplied)}</strong>
+                  </div>
+                  <div className="summary-row">
+                    <span>Claimed</span>
+                    <strong>{formatDate(redemption.claimedAt)}</strong>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </article>
+
+      <article className="card" data-testid="admin-user-monitoring">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">User Monitoring</p>
+            <h2>KYC, ban, and role control</h2>
+          </div>
+          <span className="pill pill--accent">{users.length} users</span>
+        </div>
+        <div className="order-list">
+          {users.map((account) => (
+            <article className="service-panel" key={account.id}>
+              <div className="service-panel__top">
+                <div>
+                  <strong>{account.fullName || account.username}</strong>
+                  <p className="muted">
+                    @{account.username} | {account.email}
+                  </p>
+                </div>
+                <span className={`status-pill status-pill--${slugStatus(account.kycStatus || 'NOT_SUBMITTED')}`}>
+                  {account.role} / {account.kycStatus || 'NOT_SUBMITTED'}
+                </span>
+              </div>
+              {account.banned && <p className="notice notice--danger">User is banned.</p>}
+              <div className="button-row">
+                <button className="button button--secondary" disabled={busyKey.startsWith(`user-${account.id}`)} onClick={() => handleUserAction(account.id, 'approve')} type="button">
+                  Approve KYC
+                </button>
+                <button className="button button--ghost" disabled={busyKey.startsWith(`user-${account.id}`)} onClick={() => handleUserAction(account.id, 'reject')} type="button">
+                  Reject KYC
+                </button>
+                <button className="button button--ghost" disabled={busyKey.startsWith(`user-${account.id}`)} onClick={() => handleUserAction(account.id, 'demote')} type="button">
+                  Demote
+                </button>
+                <button
+                  className="button button--ghost"
+                  disabled={busyKey.startsWith(`user-${account.id}`)}
+                  onClick={() => handleUserAction(account.id, account.banned ? 'unban' : 'ban')}
+                  type="button"
+                >
+                  {account.banned ? 'Unban' : 'Ban'}
+                </button>
               </div>
             </article>
           ))}

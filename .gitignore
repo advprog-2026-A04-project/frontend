@@ -21,6 +21,11 @@ verification/selenium-verifier/evidence/
 .venv/
 .pytest_cache/
 verification-artifacts/
+
+gha-creds-*.json
+key.json
+sa-key.json
+service-account*.json
 **/__pycache__/
 *.pyc
 
