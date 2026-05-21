@@ -267,8 +267,45 @@ export const api = {
     const suffix = query ? `?keyword=${encodeURIComponent(query)}` : '';
     return request('inventory', `/api/products/search${suffix}`);
   },
+  listProductsByJastiper(jastiperId) {
+    return request('inventory', `/api/products/jastipers/${encodeURIComponent(jastiperId)}`);
+  },
   getProduct(productId) {
     return request('inventory', `/api/products/${productId}`);
+  },
+  listMyProducts() {
+    return request('inventory', '/api/products/me');
+  },
+  createProduct(payload) {
+    return request('inventory', '/api/products', {
+      method: 'POST',
+      body: payload,
+    });
+  },
+  updateProduct(productId, payload) {
+    return request('inventory', `/api/products/${productId}`, {
+      method: 'PUT',
+      body: payload,
+    });
+  },
+  deleteProduct(productId) {
+    return request('inventory', `/api/products/${productId}`, {
+      method: 'DELETE',
+    });
+  },
+  listAdminProducts() {
+    return request('inventory', '/api/products');
+  },
+  adminUpdateProduct(productId, payload) {
+    return request('inventory', `/api/products/admin/${productId}`, {
+      method: 'PUT',
+      body: payload,
+    });
+  },
+  adminDeleteProduct(productId) {
+    return request('inventory', `/api/products/admin/${productId}`, {
+      method: 'DELETE',
+    });
   },
   getWallet(userId) {
     return request('wallet', '/wallet/balance', {
