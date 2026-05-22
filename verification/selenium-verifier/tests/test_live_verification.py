@@ -149,6 +149,18 @@ def transactions_for_order(transactions: list[dict], order_id: int, txn_type: st
     return matched
 
 
+def record_verified(artifact_manager, scenario_artifacts, scenario: str, details: dict) -> None:
+    scenario_artifacts.write_json("details.json", details)
+    artifact_manager.record_scenario(scenario, VERIFIED, details)
+
+
+def record_failed(artifact_manager, scenario_artifacts, pages, scenario: str, details: dict, error: Exception) -> None:
+    scenario_artifacts.save_screenshot("failure.png", pages.driver)
+    details["error"] = str(error)
+    scenario_artifacts.write_json("failure.json", details)
+    artifact_manager.record_scenario(scenario, FAILED, details)
+
+
 FINAL_NAVIGATION_CASES = [
     "home_service_health_cards",
     "home_featured_products",
