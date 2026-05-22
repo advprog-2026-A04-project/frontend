@@ -113,7 +113,7 @@ if (-not $SkipCloud) {
     foreach ($service in $services) {
         if (Test-CommandExists "gcloud") {
             $describe = gcloud run services describe $service.Name --project $Project --region $Region --format "value(status.conditions[0].status)" 2>$null
-            Add-Result $rows "Cloud Run service: $($service.Name)" "gcloud run services describe" ($(if ($LASTEXITCODE -eq 0 -and $describe) { "PASS" } else { "FAIL" })) "Region $Region"
+            Add-Result $rows "Cloud Run service: $($service.Name)" "gcloud run services describe" ($(if ($LASTEXITCODE -eq 0 -and $describe -eq "True") { "PASS" } else { "FAIL" })) "Region $Region; ready=$describe"
         }
 
         $http = Test-Http $service.Health
@@ -130,4 +130,3 @@ if ($failed.Count -gt 0) {
 }
 
 Write-Host "Final rubric check passed." -ForegroundColor Green
-
