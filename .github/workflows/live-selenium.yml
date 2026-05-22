@@ -1,0 +1,55 @@
+name: Live Selenium Verification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-selenium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    defaults:
+      run:
+        working-directory: verification/selenium-verifier
+
+    env:
+      HEADLESS: "true"
+      BROWSER: chrome
+      FRONTEND_BASE_URL: https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app
+      AUTH_BASE_URL: https://auth-profile-api-osvihgaoya-uc.a.run.app
+      INVENTORY_BASE_URL: https://inventory-api-osvihgaoya-uc.a.run.app
+      WALLET_BASE_URL: https://wallet-api-osvihgaoya-uc.a.run.app
+      ORDER_BASE_URL: https://order-api-osvihgaoya-uc.a.run.app
+      VOUCHER_BASE_URL: https://voucher-promo-api-osvihgaoya-uc.a.run.app
+      VOUCHER_ADMIN_TOKEN: ${{ secrets.VOUCHER_ADMIN_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: verification/selenium-verifier/requirements.txt
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Run live Selenium verifier
+        run: >
+          python -m pytest tests/test_live_verification.py -q
+          --html=verification-artifacts/live-report.html
+          --self-contained-html
+
+      - name: Upload Selenium artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-selenium-artifacts
+          path: verification/selenium-verifier/verification-artifacts
+          if-no-files-found: error

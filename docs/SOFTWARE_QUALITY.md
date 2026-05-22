@@ -20,7 +20,7 @@
 | Wallet | `./gradlew.bat check bootJar` | Passed |
 | Voucher/Promo | `./gradlew.bat check :backend:bootJar` | Passed |
 | Frontend | `npm run lint; npm run test; npm run build` | Passed |
-| Selenium verifier | `python -m pytest tests/test_live_verification.py --collect-only -q` | 32 tests collected |
+| Selenium verifier | `python -m pytest tests/test_live_verification.py -q --html=../../verification-artifacts/live-report-final-32.html --self-contained-html` | 32 passed against Cloud Run |
 
 ## Coverage
 
@@ -37,7 +37,7 @@ Frontend unit coverage is not presented as 90%+. The frontend grading evidence i
 
 ## Selenium Scenarios
 
-The verifier currently collects 32 browser scenarios, including:
+The verifier currently runs 32 browser scenarios. Final deployed run: `32 passed in 408.58s`, report `verification-artifacts/live-report-final-32.html`. Scenarios include:
 
 - login, register, logout, and invalid login
 - profile load/update and role navigation
@@ -56,6 +56,6 @@ Run commands are documented in `verification/selenium-verifier/README.md`.
 | Risk | Status |
 |---|---|
 | Frontend unit coverage below 90% | Accepted partial; Selenium covers user-facing integration. |
-| Public Selenium report retention | Requires GitHub Actions artifact or local report upload for final grading. |
+| Public Selenium report retention | Manual GitHub Actions workflow uploads `live-selenium-artifacts`; retention follows GitHub Actions artifact policy. |
 | Cross-service error format consistency | Still uneven and should be standardized after grading. |
 | Database migrations | Voucher has stronger migration/provisioning evidence; other services need Flyway/Liquibase hardening. |

@@ -33,7 +33,7 @@ All runtime services deploy to Google Cloud Run in project `project-58e5335e-d6a
 | Order | CI, CodeQL, Scorecard, CD, Gradle check, Cloud Run deploy |
 | Wallet | CI and CD, staging-gated main promotion, Gradle check, Cloud Run deploy |
 | Voucher-Promo | CI, PMD, CodeQL, dependency review, PR policy, Google Cloud Run deploy |
-| frontend | CI/CD, lint, Vitest coverage, Vite build, Cloud Run deploy |
+| frontend | CI/CD, lint, Vitest coverage, Vite build, Cloud Run deploy, manual live Selenium artifact workflow |
 
 Recent deploy workflow fixes:
 
@@ -53,6 +53,8 @@ Recent deploy workflow fixes:
 | Functional observability | Selenium artifacts include screenshots, API details, and per-scenario summaries |
 
 Wallet top-up observability is split between buyer and admin flows: buyers create pending top-up requests from `/wallet`, and admins review/approve/reject those requests from the admin console. This matches the Wallet service authorization model and avoids exposing internal service tokens in the browser.
+
+Final functional observability evidence: `verification-artifacts/live-report-final-32.html` shows 32/32 deployed Selenium scenarios passing. The manual `Live Selenium Verification` GitHub Actions workflow publishes the same verifier output as `live-selenium-artifacts`.
 
 Manual dashboard path:
 
