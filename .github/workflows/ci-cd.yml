@@ -63,9 +63,10 @@ jobs:
       - name: Deploy to Cloud Run
         if: github.event_name != 'pull_request'
         run: |
+          project_id="${GOOGLE_CLOUD_PROJECT:-${CLOUDSDK_CORE_PROJECT}}"
           gcloud run deploy "$CLOUD_RUN_SERVICE" \
             --source . \
-            --project "${{ secrets.GCP_PROJECT_ID }}" \
+            --project "$project_id" \
             --region "$CLOUD_RUN_REGION" \
             --allow-unauthenticated \
             --max-instances=3
@@ -73,8 +74,9 @@ jobs:
       - name: Smoke test
         if: github.event_name != 'pull_request'
         run: |
+          project_id="${GOOGLE_CLOUD_PROJECT:-${CLOUDSDK_CORE_PROJECT}}"
           url="$(gcloud run services describe "$CLOUD_RUN_SERVICE" \
-            --project "${{ secrets.GCP_PROJECT_ID }}" \
+            --project "$project_id" \
             --region "$CLOUD_RUN_REGION" \
             --format='value(status.url)')"
           curl --fail --silent --show-error "$url/status"
