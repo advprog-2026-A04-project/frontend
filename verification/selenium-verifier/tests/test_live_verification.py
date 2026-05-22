@@ -698,7 +698,10 @@ def test_route_guards_search_filters_and_role_navigation(
         query = names_before[0].split()[0]
         pages.catalog.search(query)
         pages.wait.until(
-            lambda _driver: all(query.lower() in name.lower() for name in pages.catalog.visible_product_names())
+            lambda _driver: (
+                (names := pages.catalog.visible_product_names())
+                and all(query.lower() in name.lower() for name in names)
+            )
         )
         names_after_search = pages.catalog.visible_product_names()
         assert names_after_search

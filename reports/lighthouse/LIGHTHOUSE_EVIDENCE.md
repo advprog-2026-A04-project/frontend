@@ -8,7 +8,6 @@ Evidence path after a workflow run:
 - Local workflow output directory: `.lighthouseci/`
 - URLs checked:
   - `https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/`
-  - `https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/status`
 
 Run command for local/manual verification:
 

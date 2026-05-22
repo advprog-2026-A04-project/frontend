@@ -18,7 +18,6 @@ jobs:
         with:
           urls: |
             https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/
-            https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/status
           uploadArtifacts: true
           temporaryPublicStorage: true
 

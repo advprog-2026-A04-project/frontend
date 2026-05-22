@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -46,13 +47,16 @@ class CatalogPage(BasePage):
         )
 
     def visible_product_names(self) -> list[str]:
-        return [
-            element.text.strip()
-            for element in self.wait.until(
-                EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".product-card h3"))
-            )
-            if element.text.strip()
-        ]
+        try:
+            return [
+                element.text.strip()
+                for element in self.wait.until(
+                    EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".product-card h3"))
+                )
+                if element.text.strip()
+            ]
+        except StaleElementReferenceException:
+            return []
 
     def category_labels(self) -> list[str]:
         return [element.text.strip() for element in self.category_buttons()]
