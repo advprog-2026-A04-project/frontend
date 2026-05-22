@@ -273,12 +273,32 @@ class SetupHelper:
             evidence_name=f"{prefix}_request",
         ).payload
         request_id = int(top_up_response["requestId"])
-        self.services.wallet.mark_top_up_success(
-            request_id,
-            token=user.token,
-            evidence=evidence,
-            evidence_name=f"{prefix}_mark_success",
-        )
+
+        if self.settings.internal_api_token:
+            self.services.wallet.mark_top_up_success(
+                request_id,
+                internal_token=self.settings.internal_api_token,
+                evidence=evidence,
+                evidence_name=f"{prefix}_mark_success",
+            )
+        elif self.settings.admin_email and self.settings.admin_password:
+            admin = self.login_existing_user_api(
+                self.settings.admin_email,
+                self.settings.admin_password,
+                evidence=evidence,
+                evidence_name=f"{prefix}_admin_login",
+            )
+            self.services.wallet.mark_top_up_success(
+                request_id,
+                token=admin.token,
+                evidence=evidence,
+                evidence_name=f"{prefix}_mark_success",
+            )
+        else:
+            raise AssertionError(
+                "Top-up approval requires INTERNAL_API_TOKEN or seeded admin credentials."
+            )
+
         after_balance = Decimal(
             str(
                 self.services.wallet.get_balance(
