@@ -235,6 +235,8 @@ describe('edge page and regression flows', () => {
     const user = userEvent.setup();
     expect(await screen.findByText(/banned/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /jastiper queue/i })).toHaveAttribute('href', '/jastiper/orders');
+    expect(screen.queryByTestId('kyc-panel')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('submit-kyc-button')).not.toBeInTheDocument();
 
     await user.clear(screen.getByLabelText(/username/i));
     await user.type(screen.getByLabelText(/username/i), 'duplicate');
@@ -262,6 +264,8 @@ describe('edge page and regression flows', () => {
 
     expect(await screen.findByRole('heading', { name: 'Admin User' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /admin console/i })).toHaveAttribute('href', '/admin');
+    expect(screen.queryByTestId('kyc-panel')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('submit-kyc-button')).not.toBeInTheDocument();
   });
 
   it('renders profile fallbacks for incomplete persisted users', async () => {
