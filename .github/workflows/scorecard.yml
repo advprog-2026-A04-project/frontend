@@ -10,8 +10,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
-  id-token: write
 
 jobs:
   scorecard:
@@ -27,7 +25,7 @@ jobs:
         with:
           results_file: scorecard-results.sarif
           results_format: sarif
-          publish_results: true
+          publish_results: false
 
       - name: Upload Scorecard SARIF artifact
         if: always()
