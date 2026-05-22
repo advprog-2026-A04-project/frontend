@@ -13,15 +13,15 @@ function clearPersistedSession() {
   localStorage.removeItem('json.sessionUser');
 }
 
-function toSessionUser(profile) {
+function toSessionUser(profile = {}, fallback = {}) {
   return {
-    id: profile.id,
-    email: profile.email,
-    username: profile.username,
-    fullName: profile.fullName,
-    role: profile.role,
-    kycStatus: profile.kycStatus,
-    banned: profile.banned,
+    id: profile.id ?? fallback.id,
+    email: profile.email ?? fallback.email,
+    username: profile.username ?? fallback.username,
+    fullName: profile.fullName ?? fallback.fullName,
+    role: profile.role ?? fallback.role,
+    kycStatus: profile.kycStatus ?? fallback.kycStatus,
+    banned: profile.banned ?? fallback.banned,
   };
 }
 
@@ -45,7 +45,7 @@ export function SessionProvider({ children }) {
       try {
         const profile = await api.getCurrentUser(token);
         if (!cancelled) {
-          setUser(profile);
+          setUser((current) => toSessionUser(profile, current || {}));
         }
       } catch {
         if (!cancelled) {
@@ -86,7 +86,7 @@ export function SessionProvider({ children }) {
 
   async function updateProfile(payload) {
     const profile = await api.updateProfile(payload);
-    const nextUser = toSessionUser(profile);
+    const nextUser = toSessionUser(profile, user || {});
 
     setUser(nextUser);
     persistSession(token, nextUser);
@@ -94,8 +94,25 @@ export function SessionProvider({ children }) {
   }
 
   async function submitKyc(payload) {
-    const profile = await api.submitKyc(payload);
-    const nextUser = toSessionUser(profile);
+    const submittedProfile = await api.submitKyc(payload);
+    let hydratedProfile = {};
+
+    try {
+      hydratedProfile = await api.getCurrentUser(token);
+    } catch {
+      hydratedProfile = {};
+    }
+
+    const fallback = {
+      ...(user || {}),
+      fullName: payload.fullName || user?.fullName,
+      kycStatus: submittedProfile?.kycStatus || 'PENDING',
+    };
+    const profile = { ...hydratedProfile, ...submittedProfile };
+    if (!submittedProfile?.kycStatus && (!hydratedProfile?.kycStatus || hydratedProfile.kycStatus === user?.kycStatus)) {
+      profile.kycStatus = 'PENDING';
+    }
+    const nextUser = toSessionUser(profile, fallback);
 
     setUser(nextUser);
     persistSession(token, nextUser);

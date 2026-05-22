@@ -5,6 +5,7 @@ import PageShell from '../components/PageShell';
 import { useSession } from '../context/SessionContext';
 import { api } from '../lib/api';
 import { canRateOrder, formatCurrency, formatDate, statusLabel } from '../lib/format';
+import { rememberOrderProductReviews } from '../lib/productReviews';
 
 const TIMELINE = ['PAID', 'PURCHASED', 'SHIPPED', 'COMPLETED'];
 
@@ -69,6 +70,7 @@ export default function OrderResultPage() {
         comment: ratingForm.comment,
       });
       setOrder(updatedOrder);
+      rememberOrderProductReviews(updatedOrder, user?.id);
       setMessage('Rating submitted.');
     } catch (submissionError) {
       setError(submissionError.message);

@@ -95,6 +95,8 @@ describe('admin console coverage', () => {
     );
 
     expect(await screen.findByRole('heading', { name: /voucher management and order monitoring/i })).toBeInTheDocument();
+    expect(screen.getByTestId('admin-dashboard')).toHaveTextContent('Admin overview');
+    expect(screen.getByTestId('admin-dashboard')).toHaveTextContent('Pending top-ups');
     expect(screen.getByText(sampleProduct.name)).toBeInTheDocument();
     expect(screen.getByTestId('wallet-topup-approval')).toHaveTextContent('Top-up #501');
     expect(screen.getByTestId('voucher-redemption-audit')).toHaveTextContent('Enter the voucher admin token');

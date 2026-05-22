@@ -14,6 +14,7 @@ function navClass(active, current) {
 export default function PrimaryHeader({ active = 'home', walletBalance = null, showSearch = false }) {
   const { isAuthenticated, user } = useSession();
   const avatarSeed = encodeURIComponent(user?.username || user?.email || 'json');
+  const canUseBuyerFlows = user?.role !== 'ADMIN';
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#13112A]/85 backdrop-blur-md">
@@ -38,12 +39,16 @@ export default function PrimaryHeader({ active = 'home', walletBalance = null, s
             </NavLink>
             {isAuthenticated && (
               <>
-                <NavLink className={navClass(active, 'orders')} to="/orders">
-                  My Orders
-                </NavLink>
-                <NavLink className={navClass(active, 'wallet')} to="/wallet">
-                  Wallet
-                </NavLink>
+                {canUseBuyerFlows && (
+                  <>
+                    <NavLink className={navClass(active, 'orders')} to="/orders">
+                      My Orders
+                    </NavLink>
+                    <NavLink className={navClass(active, 'wallet')} to="/wallet">
+                      Wallet
+                    </NavLink>
+                  </>
+                )}
                 <NavLink className={navClass(active, 'profile')} to="/profile">
                   Profile
                 </NavLink>
@@ -75,7 +80,7 @@ export default function PrimaryHeader({ active = 'home', walletBalance = null, s
             </label>
           )}
 
-          {isAuthenticated && walletBalance !== null && (
+          {isAuthenticated && canUseBuyerFlows && walletBalance !== null && (
             <div className="hidden items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-emerald-300 md:flex">
               <span className="material-symbols-outlined text-base">account_balance_wallet</span>
               <span className="text-sm font-bold">{formatCurrency(walletBalance)}</span>

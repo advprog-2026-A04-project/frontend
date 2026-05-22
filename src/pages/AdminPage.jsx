@@ -94,6 +94,16 @@ export default function AdminPage() {
   const expiredVouchers = useMemo(() => vouchers.filter((voucher) => voucher.status === 'EXPIRED'), [vouchers]);
   const disabledVouchers = useMemo(() => vouchers.filter((voucher) => voucher.status === 'INACTIVE'), [vouchers]);
   const lowStockProducts = useMemo(() => products.filter((product) => Number(product.stock || 0) <= 3), [products]);
+  const pendingTopUps = useMemo(() => topUpRequests.filter((request) => request.status === 'PENDING'), [topUpRequests]);
+  const pendingKycUsers = useMemo(() => users.filter((account) => account.kycStatus === 'PENDING'), [users]);
+  const activeOrders = useMemo(() => orders.filter((order) => ['PAID', 'PURCHASED', 'SHIPPED'].includes(order.status)), [orders]);
+  const completedRevenue = useMemo(
+    () =>
+      orders
+        .filter((order) => order.status === 'COMPLETED')
+        .reduce((sum, order) => sum + Number(order.totalPaid || 0), 0),
+    [orders],
+  );
 
   async function refreshVouchers() {
     if (!adminToken) {
@@ -348,6 +358,42 @@ export default function AdminPage() {
 
       {message && <div className="notice notice--success">{message}</div>}
       {error && <div className="notice notice--danger">{error}</div>}
+
+      <article className="card" data-testid="admin-dashboard">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Dashboard</p>
+            <h2>Admin overview</h2>
+          </div>
+          <span className="pill pill--accent">{activeOrders.length} active orders</span>
+        </div>
+        <div className="grid-two">
+          <div className="summary-row">
+            <span>Total orders</span>
+            <strong>{orders.length}</strong>
+          </div>
+          <div className="summary-row">
+            <span>Pending top-ups</span>
+            <strong>{pendingTopUps.length}</strong>
+          </div>
+          <div className="summary-row">
+            <span>Pending KYC</span>
+            <strong>{pendingKycUsers.length}</strong>
+          </div>
+          <div className="summary-row">
+            <span>Active vouchers</span>
+            <strong>{activeVouchers.length}</strong>
+          </div>
+          <div className="summary-row">
+            <span>Low stock products</span>
+            <strong>{lowStockProducts.length}</strong>
+          </div>
+          <div className="summary-row">
+            <span>Completed revenue</span>
+            <strong>{formatCurrency(completedRevenue)}</strong>
+          </div>
+        </div>
+      </article>
 
       <div className="grid-two">
         <article className="card">

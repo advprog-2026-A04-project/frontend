@@ -6,6 +6,7 @@ import ProductImage from '../components/ProductImage';
 import { useSession } from '../context/SessionContext';
 import { api } from '../lib/api';
 import { formatCurrency, formatDate } from '../lib/format';
+import { findProductReviewFromOrders, readStoredProductReview } from '../lib/productReviews';
 
 export default function ProductDetailPage() {
   const navigate = useNavigate();
@@ -13,9 +14,12 @@ export default function ProductDetailPage() {
   const { isAuthenticated, user } = useSession();
   const [product, setProduct] = useState(null);
   const [wallet, setWallet] = useState(null);
+  const [productReview, setProductReview] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const isAdmin = user?.role === 'ADMIN';
+  const canCheckout = isAuthenticated && !isAdmin;
 
   useEffect(() => {
     let cancelled = false;
@@ -26,12 +30,17 @@ export default function ProductDetailPage() {
 
       try {
         const productPromise = api.getProduct(productId);
-        const walletPromise = user ? api.getWallet(user.id) : Promise.resolve(null);
-        const [productResult, walletResult] = await Promise.all([productPromise, walletPromise]);
+        const walletPromise = user && !isAdmin ? api.getWallet(user.id) : Promise.resolve(null);
+        const ordersPromise = user?.role === 'TITIPER' ? api.listOrders().catch(() => []) : Promise.resolve([]);
+        const [productResult, walletResult, orderResult] = await Promise.all([productPromise, walletPromise, ordersPromise]);
 
         if (!cancelled) {
           setProduct(productResult);
           setWallet(walletResult);
+          setProductReview(
+            findProductReviewFromOrders(orderResult, productId, user?.id)
+              || readStoredProductReview(productId, user?.id),
+          );
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -49,7 +58,7 @@ export default function ProductDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [productId, user]);
+  }, [isAdmin, productId, user]);
 
   if (loading) {
     return <LoadingState label="Loading product..." />;
@@ -136,6 +145,10 @@ export default function ProductDetailPage() {
                   <p className="mt-2 text-lg font-bold text-white">{product.originLocation || '-'}</p>
                 </div>
                 <div className="rounded-[22px] border border-white/10 bg-[#13112A]/75 p-5">
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Jastiper ID</p>
+                  <p className="mt-2 text-lg font-bold text-white">{product.jastiperId ?? '-'}</p>
+                </div>
+                <div className="rounded-[22px] border border-white/10 bg-[#13112A]/75 p-5">
                   <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Rating</p>
                   <p className="mt-2 text-lg font-bold text-white">
                     {product.avgRating ? `${Number(product.avgRating).toFixed(1)} / 5` : 'New drop'}
@@ -143,6 +156,25 @@ export default function ProductDetailPage() {
                 </div>
               </div>
             </div>
+
+            {productReview && (
+              <div className="rounded-[30px] border border-emerald-400/20 bg-emerald-500/10 p-8 backdrop-blur-md" data-testid="product-review-summary">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">Your submitted review</p>
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-[22px] border border-white/10 bg-[#13112A]/65 p-5">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Product rating</p>
+                    <p className="mt-2 text-lg font-bold text-white">{productReview.productRating}/5</p>
+                  </div>
+                  <div className="rounded-[22px] border border-white/10 bg-[#13112A]/65 p-5">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Jastiper rating</p>
+                    <p className="mt-2 text-lg font-bold text-white">{productReview.jastiperRating}/5</p>
+                  </div>
+                </div>
+                <p className="mt-4 rounded-[20px] border border-white/10 bg-[#13112A]/65 p-4 text-sm text-slate-200">
+                  {productReview.comment || 'No comment.'}
+                </p>
+              </div>
+            )}
 
             <div className="space-y-5 rounded-[30px] border border-white/10 bg-white/5 p-8 backdrop-blur-md">
               {wallet && (
@@ -185,14 +217,14 @@ export default function ProductDetailPage() {
               <div className="flex flex-wrap gap-3">
                 <button
                   className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan to-blue-500 px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-[#0B0914] shadow-[0_0_22px_rgba(0,240,255,0.35)] disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={product.stock < 1}
+                  disabled={product.stock < 1 || isAdmin}
                   onClick={() =>
                     navigate(
-                      isAuthenticated
+                      canCheckout
                         ? `/checkout?productId=${product.id}&qty=${quantity}`
                         : '/login',
                       {
-                        state: isAuthenticated
+                        state: canCheckout
                           ? undefined
                           : {
                               from: `/checkout?productId=${product.id}&qty=${quantity}`,
@@ -203,7 +235,7 @@ export default function ProductDetailPage() {
                   type="button"
                 >
                   <span className="material-symbols-outlined text-base">shopping_cart_checkout</span>
-                  {isAuthenticated ? 'Checkout Now' : 'Log In to Checkout'}
+                  {isAdmin ? 'Admin Cannot Checkout' : isAuthenticated ? 'Checkout Now' : 'Log In to Checkout'}
                 </button>
                 <Link
                   className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold uppercase tracking-[0.18em] text-white transition-colors hover:border-cyan/30 hover:text-cyan"

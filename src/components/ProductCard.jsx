@@ -33,6 +33,9 @@ export default function ProductCard({ product }) {
             {product.name}
           </h3>
           <p className="mt-2 line-clamp-2 text-sm text-slate-400">{product.description}</p>
+          <p className="mt-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+            Jastiper ID: {product.jastiperId ?? '-'}
+          </p>
         </div>
 
         <div className="flex items-end justify-between gap-3">

@@ -14,7 +14,7 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
-  const [kycForm, setKycForm] = useState({ documentUrl: '', note: '' });
+  const [kycForm, setKycForm] = useState({ fullName: user?.fullName || '', documentUrl: '', note: '' });
   const [submittingKyc, setSubmittingKyc] = useState(false);
 
   useEffect(() => {
@@ -23,6 +23,13 @@ export default function ProfilePage() {
       fullName: user?.fullName || '',
     });
   }, [user?.fullName, user?.username]);
+
+  useEffect(() => {
+    setKycForm((current) => ({
+      ...current,
+      fullName: current.fullName || user?.fullName || '',
+    }));
+  }, [user?.fullName]);
 
   async function handleLogout() {
     await logout();
@@ -55,9 +62,24 @@ export default function ProfilePage() {
     setMessage('');
 
     try {
-      await submitKyc(kycForm);
-      setMessage('KYC submitted for admin review.');
-      setKycForm({ documentUrl: '', note: '' });
+      const fullName = kycForm.fullName.trim();
+      if (!fullName || fullName.split(/\s+/).length < 2) {
+        throw new Error('Full name is required for KYC verification.');
+      }
+
+      if (fullName !== (user?.fullName || '').trim()) {
+        const profilePayload = user?.username ? { username: user.username, fullName } : { fullName };
+        await updateProfile(profilePayload);
+        setForm((current) => ({ ...current, fullName }));
+      }
+
+      const nextUser = await submitKyc({
+        fullName,
+        documentUrl: kycForm.documentUrl,
+        note: kycForm.note,
+      });
+      setMessage(`KYC submitted for admin review. Current status: ${nextUser.kycStatus || 'PENDING'}.`);
+      setKycForm({ fullName: nextUser.fullName || fullName, documentUrl: '', note: '' });
     } catch (submissionError) {
       setError(submissionError.message);
     } finally {
@@ -176,6 +198,18 @@ export default function ProfilePage() {
           </div>
           <form className="space-y-5" onSubmit={handleSubmitKyc}>
             <label className="flex flex-col gap-2">
+              <span className="text-sm font-bold text-white">Legal name</span>
+              <input
+                className="rounded-[20px] border border-white/10 bg-white/5 px-5 py-4 text-white outline-none placeholder:text-slate-500"
+                data-testid="kyc-full-name"
+                type="text"
+                value={kycForm.fullName}
+                onChange={(event) => setKycForm((current) => ({ ...current, fullName: event.target.value }))}
+                placeholder="Use the full name from your identity document"
+                required
+              />
+            </label>
+            <label className="flex flex-col gap-2">
               <span className="text-sm font-bold text-white">Document URL</span>
               <input
                 className="rounded-[20px] border border-white/10 bg-white/5 px-5 py-4 text-white outline-none placeholder:text-slate-500"
@@ -210,21 +244,25 @@ export default function ProfilePage() {
         </article>
 
         <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-          <Link className="rounded-[24px] border border-white/10 bg-white/5 p-6 transition-colors hover:border-cyan/40 hover:bg-white/10" to="/wallet">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan/20 text-cyan">
-              <span className="material-symbols-outlined">account_balance_wallet</span>
-            </div>
-            <h2 className="text-lg font-bold text-white">Wallet</h2>
-            <p className="mt-2 text-sm text-slate-400">Top up, inspect balance, and review transaction history.</p>
-          </Link>
+          {user?.role !== 'ADMIN' && (
+            <>
+              <Link className="rounded-[24px] border border-white/10 bg-white/5 p-6 transition-colors hover:border-cyan/40 hover:bg-white/10" to="/wallet">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan/20 text-cyan">
+                  <span className="material-symbols-outlined">account_balance_wallet</span>
+                </div>
+                <h2 className="text-lg font-bold text-white">Wallet</h2>
+                <p className="mt-2 text-sm text-slate-400">Top up, inspect balance, and review transaction history.</p>
+              </Link>
 
-          <Link className="rounded-[24px] border border-white/10 bg-white/5 p-6 transition-colors hover:border-fuchsia-400/40 hover:bg-white/10" to="/orders">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-fuchsia-500/20 text-fuchsia-300">
-              <span className="material-symbols-outlined">shopping_bag</span>
-            </div>
-            <h2 className="text-lg font-bold text-white">Orders</h2>
-            <p className="mt-2 text-sm text-slate-400">Track order lifecycle, refunds, and post-completion ratings.</p>
-          </Link>
+              <Link className="rounded-[24px] border border-white/10 bg-white/5 p-6 transition-colors hover:border-fuchsia-400/40 hover:bg-white/10" to="/orders">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-fuchsia-500/20 text-fuchsia-300">
+                  <span className="material-symbols-outlined">shopping_bag</span>
+                </div>
+                <h2 className="text-lg font-bold text-white">Orders</h2>
+                <p className="mt-2 text-sm text-slate-400">Track order lifecycle, refunds, and post-completion ratings.</p>
+              </Link>
+            </>
+          )}
 
           {(user?.role === 'JASTIPER' || user?.role === 'ADMIN') && (
             <Link

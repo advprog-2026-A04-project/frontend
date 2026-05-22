@@ -132,14 +132,91 @@ describe('edge page and regression flows', () => {
     expect(await screen.findByRole('heading', { name: buyerProfile.fullName })).toBeInTheDocument();
     await user.type(screen.getByTestId('kyc-document-url'), 'https://docs.example/kyc.pdf');
     await user.type(screen.getByTestId('kyc-note'), 'Ready to become a jastiper.');
+    expect(screen.getByTestId('kyc-full-name')).toHaveValue('Demo Buyer');
     await user.click(screen.getByTestId('submit-kyc-button'));
 
     expect(await screen.findByText(/kyc submitted for admin review/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/current status: pending/i)).length).toBeGreaterThan(0);
     expect(JSON.parse(localStorage.getItem('json.sessionUser'))).toMatchObject({ kycStatus: 'PENDING' });
 
     await user.click(screen.getByRole('button', { name: /logout/i }));
     expect(await screen.findByRole('heading', { name: /secure hype drops/i })).toBeInTheDocument();
     expect(localStorage.getItem('json.sessionToken')).toBeNull();
+  });
+
+  it('requires a legal name and saves it before submitting KYC', async () => {
+    const profileWithoutName = { ...buyerProfile, fullName: '' };
+    const calls = [];
+    renderAppAt(
+      '/profile',
+      {
+        ...authenticatedRoutes(profileWithoutName),
+        'PUT /profile': ({ body }) => {
+          calls.push({ action: 'profile', body });
+          return { body: { ...profileWithoutName, ...body } };
+        },
+        'POST /profile/kyc': ({ body }) => {
+          calls.push({ action: 'kyc', body });
+          return { body: { ...profileWithoutName, fullName: body.fullName, kycStatus: 'PENDING' } };
+        },
+      },
+      profileWithoutName,
+    );
+
+    const user = userEvent.setup();
+    expect(await screen.findByText(/kyc not_submitted/i)).toBeInTheDocument();
+    await user.type(screen.getByTestId('kyc-full-name'), 'Budi');
+    await user.type(screen.getByTestId('kyc-document-url'), 'https://docs.example/budi.pdf');
+    await user.click(screen.getByTestId('submit-kyc-button'));
+    expect(await screen.findByText(/full name is required/i)).toBeInTheDocument();
+
+    await user.clear(screen.getByTestId('kyc-full-name'));
+    await user.type(screen.getByTestId('kyc-full-name'), 'Budi Santoso');
+    await user.click(screen.getByTestId('submit-kyc-button'));
+
+    expect(await screen.findByText(/kyc submitted for admin review/i)).toBeInTheDocument();
+    expect(calls).toEqual([
+      { action: 'profile', body: { username: 'demo-buyer', fullName: 'Budi Santoso' } },
+      {
+        action: 'kyc',
+        body: {
+          fullName: 'Budi Santoso',
+          documentUrl: 'https://docs.example/budi.pdf',
+          note: '',
+        },
+      },
+    ]);
+  });
+
+  it('keeps KYC status pending when profile refresh lags after submission', async () => {
+    let authCalls = 0;
+    renderAppAt(
+      '/profile',
+      {
+        'GET /auth/me': () => {
+          authCalls += 1;
+          if (authCalls === 1) {
+            return { body: buyerProfile };
+          }
+          return { status: 503, body: { message: 'Profile refresh is still catching up' } };
+        },
+        'POST /profile/kyc': ({ body }) => ({
+          body: {
+            fullName: body.fullName,
+            documentUrl: body.documentUrl,
+          },
+        }),
+      },
+      buyerProfile,
+    );
+
+    const user = userEvent.setup();
+    expect(await screen.findByRole('heading', { name: buyerProfile.fullName })).toBeInTheDocument();
+    await user.type(screen.getByTestId('kyc-document-url'), 'https://docs.example/pending.pdf');
+    await user.click(screen.getByTestId('submit-kyc-button'));
+
+    expect(await screen.findByText(/kyc submitted for admin review/i)).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem('json.sessionUser'))).toMatchObject({ kycStatus: 'PENDING' });
   });
 
   it('shows jastiper profile affordances and propagates profile errors', async () => {
@@ -220,6 +297,7 @@ describe('edge page and regression flows', () => {
 
     const user = userEvent.setup();
     expect(await screen.findByText('Tokyo Exclusive')).toBeInTheDocument();
+    expect(screen.getAllByText(/jastiper id: 2003/i).length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: /^beauty$/i }));
     expect(screen.queryByText('Tokyo Exclusive')).not.toBeInTheDocument();
     expect(screen.getByText('Seoul Beauty Kit')).toBeInTheDocument();
@@ -250,12 +328,73 @@ describe('edge page and regression flows', () => {
 
     const user = userEvent.setup();
     expect(await screen.findByRole('heading', { name: lowStockProduct.name })).toBeInTheDocument();
+    expect(screen.getByText('Jastiper ID')).toBeInTheDocument();
     await user.click(screen.getByText('add').closest('button'));
     await user.click(screen.getByText('add').closest('button'));
     await user.click(screen.getByText('remove').closest('button'));
     await user.click(screen.getByRole('button', { name: /log in to checkout/i }));
 
     expect(await screen.findByRole('heading', { name: /^log in$/i })).toBeInTheDocument();
+  });
+
+  it('shows submitted rating context on inventory detail', async () => {
+    const ratedOrder = {
+      ...sampleOrder,
+      status: 'COMPLETED',
+      rating: {
+        productRating: 4,
+        jastiperRating: 5,
+        comment: 'Arrived safely.',
+      },
+    };
+
+    renderAppAt(
+      `/product/${sampleProduct.id}`,
+      {
+        ...authenticatedRoutes(buyerProfile),
+        [`GET /api/products/${sampleProduct.id}`]: { body: sampleProduct },
+        'POST /wallet/balance': { body: { userId: 1000, balance: 500000, currency: 'IDR' } },
+        'GET /orders/my': { body: { success: true, data: [ratedOrder] } },
+      },
+      buyerProfile,
+    );
+
+    expect(await screen.findByRole('heading', { name: sampleProduct.name })).toBeInTheDocument();
+    const reviewPanel = await screen.findByTestId('product-review-summary');
+    expect(reviewPanel).toHaveTextContent('Your submitted review');
+    expect(reviewPanel).toHaveTextContent('Arrived safely.');
+    expect(reviewPanel).toHaveTextContent('4/5');
+  });
+
+  it('keeps administrators out of checkout and wallet flows', async () => {
+    const { view } = renderAppAt(
+      '/wallet',
+      {
+        ...authenticatedRoutes(adminProfile),
+        'GET /orders/admin': { body: { success: true, data: [] } },
+        'GET /api/products': { body: [] },
+        'GET /profile/admin/users': { body: [] },
+        'GET /wallet/admin/topups': { body: [] },
+      },
+      adminProfile,
+    );
+
+    expect(await screen.findByTestId('admin-dashboard')).toHaveTextContent('Admin overview');
+    expect(screen.queryByRole('button', { name: /top up wallet/i })).not.toBeInTheDocument();
+    view.unmount();
+
+    renderAppAt(
+      `/product/${sampleProduct.id}`,
+      {
+        ...authenticatedRoutes(adminProfile),
+        [`GET /api/products/${sampleProduct.id}`]: { body: sampleProduct },
+      },
+      adminProfile,
+    );
+
+    const adminCheckout = await screen.findByRole('button', { name: /admin cannot checkout/i });
+    expect(adminCheckout).toBeDisabled();
+    expect(screen.queryByRole('link', { name: /^wallet$/i })).not.toBeInTheDocument();
   });
 
   it('renders product detail load failures and disabled checkout for empty stock', async () => {

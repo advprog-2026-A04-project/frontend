@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import LoadingState from './LoadingState';
 import { useSession } from '../context/SessionContext';
 
-export default function ProtectedRoute({ roles = [] }) {
+export default function ProtectedRoute({ roles = [], blockedRoles = [] }) {
   const location = useLocation();
   const { ready, isAuthenticated, user } = useSession();
 
@@ -16,6 +16,10 @@ export default function ProtectedRoute({ roles = [] }) {
 
   if (roles.length > 0 && !roles.includes(user?.role)) {
     return <Navigate replace to="/" />;
+  }
+
+  if (blockedRoles.includes(user?.role)) {
+    return <Navigate replace to={user?.role === 'ADMIN' ? '/admin' : '/'} />;
   }
 
   return <Outlet />;

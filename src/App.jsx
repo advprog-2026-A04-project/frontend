@@ -29,9 +29,12 @@ function App() {
           <Route element={<RegisterPage />} path="/register" />
           <Route element={<LoginPage />} path="/login" />
 
-          <Route element={<ProtectedRoute />}>
+          <Route element={<ProtectedRoute blockedRoles={['ADMIN']} />}>
             <Route element={<CheckoutPage />} path="/checkout" />
             <Route element={<WalletPage />} path="/wallet" />
+          </Route>
+
+          <Route element={<ProtectedRoute />}>
             <Route element={<OrdersPage />} path="/orders" />
             <Route element={<OrderResultPage />} path="/orders/:orderId" />
             <Route element={<OrderResultPage />} path="/success" />
