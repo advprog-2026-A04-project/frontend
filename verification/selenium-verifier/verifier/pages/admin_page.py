@@ -142,6 +142,31 @@ class AdminPage(BasePage):
         )
         self.pause_checkpoint("admin_order_visible")
 
+    def order_status_text(self, order_id: int) -> str:
+        return self.wait.until(
+            EC.visibility_of_element_located(
+                (
+                    By.XPATH,
+                    f"//article[contains(@class,'order-card')][.//h2[normalize-space()='{order_id}']]"
+                    "//span[contains(@class,'status-pill')]",
+                )
+            )
+        ).text
+
+    def wait_for_order_status(self, order_id: int, expected: str) -> str:
+        self.wait.until(lambda _driver: expected in self.order_status_text(order_id))
+        self.pause_checkpoint("admin_order_status")
+        return self.order_status_text(order_id)
+
+    def click_transition(self, order_id: int, next_status_label: str) -> None:
+        self.click_xpath(
+            f"//article[contains(@class,'order-card')][.//h2[normalize-space()='{order_id}']]"
+            f"//button[normalize-space()='Mark {next_status_label}']"
+        )
+
+    def logout_via_ui(self) -> None:
+        self.click_xpath("//article[.//p[normalize-space()='Admin Console']]//button[normalize-space()='Logout']")
+
     def wait_for_user(self, email: str) -> None:
         self.wait.until(
             EC.visibility_of_element_located(

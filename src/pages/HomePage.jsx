@@ -52,9 +52,9 @@ export default function HomePage() {
                   Secure hype drops through the newer JSON storefront.
                 </h1>
                 <p className="max-w-2xl text-base text-slate-300 sm:text-lg">
-                  The UI now follows the newest attached frontend. Buyer pages keep that visual system, while the
-                  data layer stays wired to the Milestone 75 services for wallet top-up, voucher checkout, order
-                  lifecycle tracking, refund visibility, and rating after completion.
+                  Buyer pages keep the newest visual system while the data layer stays wired to the Milestone 75
+                  services for wallet top-up, voucher checkout, order lifecycle tracking, refund visibility, and
+                  rating after completion.
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
@@ -82,7 +82,7 @@ export default function HomePage() {
                   {user ? user.fullName || user.username : 'Guest Visitor'}
                 </h2>
                 <p className="mt-2 text-sm text-slate-400">
-                  {user ? `${user.role} flow is available from the same deployed frontend.` : 'Register or log in to top up, checkout, and track orders.'}
+                  {user ? `${user.role} flow is available from this deployed app.` : 'Register or log in to top up, checkout, and track orders.'}
                 </p>
               </div>
               <div className="grid gap-3">

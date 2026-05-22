@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import LoadingState from '../components/LoadingState';
+import { useSession } from '../context/SessionContext';
 import { api } from '../lib/api';
-import { canCancelOrder, formatCurrency, formatDate, slugStatus, statusLabel } from '../lib/format';
+import { allowedNextStatuses, canCancelOrder, formatCurrency, formatDate, slugStatus, statusLabel } from '../lib/format';
 
 const EMPTY_VOUCHER_FORM = {
   code: '',
@@ -31,6 +32,8 @@ function toLocalDateTimeInput(offsetDays = 0) {
 }
 
 export default function AdminPage() {
+  const navigate = useNavigate();
+  const { logout } = useSession();
   const [adminToken, setAdminToken] = useState('');
   const [orders, setOrders] = useState([]);
   const [vouchers, setVouchers] = useState([]);
@@ -258,6 +261,26 @@ export default function AdminPage() {
     }
   }
 
+  async function handleStatusChange(orderId, nextStatus) {
+    setBusyKey(`order-${orderId}`);
+    setError('');
+    setMessage('');
+    try {
+      await api.updateOrderStatus(orderId, nextStatus);
+      setMessage(`Order ${orderId} moved to ${statusLabel(nextStatus)}.`);
+      setOrders(await api.listAdminOrders());
+    } catch (actionError) {
+      setError(actionError.message);
+    } finally {
+      setBusyKey('');
+    }
+  }
+
+  async function handleLogout() {
+    await logout();
+    navigate('/');
+  }
+
   async function handleUserAction(userId, action) {
     setBusyKey(`user-${userId}-${action}`);
     setError('');
@@ -325,7 +348,12 @@ export default function AdminPage() {
             <p className="eyebrow">Admin Console</p>
             <h1>Voucher management and order monitoring</h1>
           </div>
-          <span className="pill pill--accent">{orders.length} orders</span>
+          <div className="button-row">
+            <span className="pill pill--accent">{orders.length} orders</span>
+            <button className="button button--ghost" onClick={handleLogout} type="button">
+              Logout
+            </button>
+          </div>
         </div>
         <div className="form-stack">
           <label className="field">
@@ -669,50 +697,64 @@ export default function AdminPage() {
           </div>
         </div>
         <div className="order-list">
-          {orders.map((order) => (
-            <article className="order-card" key={order.id}>
-              <div className="order-card__top">
-                <div>
-                  <p className="eyebrow">Order</p>
-                  <h2>{order.id}</h2>
+          {orders.map((order) => {
+            const nextStatuses = allowedNextStatuses(order.status);
+            return (
+              <article className="order-card" key={order.id}>
+                <div className="order-card__top">
+                  <div>
+                    <p className="eyebrow">Order</p>
+                    <h2>{order.id}</h2>
+                  </div>
+                  <span className={`status-pill status-pill--${slugStatus(order.status)}`}>{statusLabel(order)}</span>
                 </div>
-                <span className={`status-pill status-pill--${slugStatus(order.status)}`}>{statusLabel(order)}</span>
-              </div>
-              <div className="summary-list">
-                <div className="summary-row">
-                  <span>Buyer</span>
-                  <strong>{order.buyerId}</strong>
+                <div className="summary-list">
+                  <div className="summary-row">
+                    <span>Buyer</span>
+                    <strong>{order.buyerId}</strong>
+                  </div>
+                  <div className="summary-row">
+                    <span>Jastiper</span>
+                    <strong>{order.jastiperId ?? '-'}</strong>
+                  </div>
+                  <div className="summary-row">
+                    <span>Total</span>
+                    <strong>{formatCurrency(order.totalPaid)}</strong>
+                  </div>
+                  <div className="summary-row">
+                    <span>Updated</span>
+                    <strong>{formatDate(order.updatedAt || order.createdAt)}</strong>
+                  </div>
                 </div>
-                <div className="summary-row">
-                  <span>Jastiper</span>
-                  <strong>{order.jastiperId ?? '-'}</strong>
+                <div className="button-row">
+                  <Link className="button button--secondary" to={`/orders/${order.id}`}>
+                    Open detail
+                  </Link>
+                  {nextStatuses.map((nextStatus) => (
+                    <button
+                      className="button"
+                      disabled={busyKey === `order-${order.id}`}
+                      key={nextStatus}
+                      onClick={() => handleStatusChange(order.id, nextStatus)}
+                      type="button"
+                    >
+                      Mark {statusLabel(nextStatus)}
+                    </button>
+                  ))}
+                  {canCancelOrder(order.status) && (
+                    <button
+                      className="button button--ghost"
+                      disabled={busyKey === `order-${order.id}`}
+                      onClick={() => handleCancelOrder(order.id)}
+                      type="button"
+                    >
+                      Cancel and refund
+                    </button>
+                  )}
                 </div>
-                <div className="summary-row">
-                  <span>Total</span>
-                  <strong>{formatCurrency(order.totalPaid)}</strong>
-                </div>
-                <div className="summary-row">
-                  <span>Updated</span>
-                  <strong>{formatDate(order.updatedAt || order.createdAt)}</strong>
-                </div>
-              </div>
-              <div className="button-row">
-                <Link className="button button--secondary" to={`/orders/${order.id}`}>
-                  Open detail
-                </Link>
-                {canCancelOrder(order.status) && (
-                  <button
-                    className="button button--ghost"
-                    disabled={busyKey === `order-${order.id}`}
-                    onClick={() => handleCancelOrder(order.id)}
-                    type="button"
-                  >
-                    Cancel and refund
-                  </button>
-                )}
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
       </article>
 
