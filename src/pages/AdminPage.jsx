@@ -4,6 +4,7 @@ import LoadingState from '../components/LoadingState';
 import { useSession } from '../context/SessionContext';
 import { api } from '../lib/api';
 import { allowedNextStatuses, canCancelOrder, formatCurrency, formatDate, slugStatus, statusLabel } from '../lib/format';
+import PageShell from '../components/PageShell';
 
 const EMPTY_VOUCHER_FORM = {
   code: '',
@@ -324,6 +325,7 @@ export default function AdminPage() {
   }
 
   return (
+    <PageShell active="admin">
     <section className="page">
       <article className="card card--hero">
         <div className="section-head">
@@ -924,5 +926,6 @@ export default function AdminPage() {
         </div>
       </article>
     </section>
+    </PageShell>
   );
 }
