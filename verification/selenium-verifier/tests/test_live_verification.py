@@ -236,6 +236,7 @@ def test_final_navigation_and_validation_scenarios(
             assert any(label.strip().upper() == "ALL" for label in labels)
             if len(labels) > 1:
                 selected = labels[1]
+                pages.catalog.select_category(selected)
                 badges = pages.catalog.wait_for_category_badges(selected)
                 details["selected_category"] = selected
                 details["visible_badges"] = badges
@@ -701,6 +702,7 @@ def test_route_guards_search_filters_and_role_navigation(
         )
         names_after_search = pages.catalog.visible_product_names()
         assert names_after_search
+        pages.catalog.load_browse()
         categories = [label for label in pages.catalog.category_labels() if label.upper() != "ALL"]
         selected_category = None
         category_result_count = None

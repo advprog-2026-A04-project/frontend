@@ -15,7 +15,8 @@ def _env(name: str, default: str | None = None) -> str | None:
     value = os.getenv(name)
     if value is None or value == "":
         return default
-    return value
+    value = value.lstrip("\ufeff").strip()
+    return value if value != "" else default
 
 
 def _env_bool(name: str, default: bool) -> bool:
