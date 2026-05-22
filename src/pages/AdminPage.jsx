@@ -37,6 +37,7 @@ export default function AdminPage() {
   const [redemptions, setRedemptions] = useState([]);
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
+  const [topUpRequests, setTopUpRequests] = useState([]);
   const [voucherForm, setVoucherForm] = useState({
     ...EMPTY_VOUCHER_FORM,
     startAt: toLocalDateTimeInput(-1),
@@ -60,18 +61,21 @@ export default function AdminPage() {
       const voucherPromise = adminToken ? api.listAdminVouchers(adminToken) : Promise.resolve([]);
       const redemptionPromise = adminToken ? api.listVoucherRedemptions(adminToken) : Promise.resolve([]);
       const usersPromise = api.listAuthUsers();
-      const [orderData, productData, voucherData, redemptionData, userData] = await Promise.all([
+      const topUpPromise = api.listWalletTopUpRequests();
+      const [orderData, productData, voucherData, redemptionData, userData, topUpData] = await Promise.all([
         orderPromise,
         productPromise,
         voucherPromise,
         redemptionPromise,
         usersPromise,
+        topUpPromise,
       ]);
       setOrders(orderData);
       setProducts(productData);
       setVouchers(voucherData);
       setRedemptions(redemptionData);
       setUsers(userData);
+      setTopUpRequests(topUpData);
     } catch (loadError) {
       setError(loadError.message);
     } finally {
@@ -230,6 +234,26 @@ export default function AdminPage() {
       await api.cancelOrder(orderId);
       setMessage(`Order ${orderId} was cancelled and refunded.`);
       setOrders(await api.listAdminOrders());
+    } catch (actionError) {
+      setError(actionError.message);
+    } finally {
+      setBusyKey('');
+    }
+  }
+
+  async function handleTopUpAction(requestId, action) {
+    setBusyKey(`topup-${requestId}-${action}`);
+    setError('');
+    setMessage('');
+    try {
+      if (action === 'approve') {
+        await api.markWalletTopUpSuccess(requestId);
+        setMessage(`Top-up request ${requestId} approved.`);
+      } else {
+        await api.markWalletTopUpFailed(requestId);
+        setMessage(`Top-up request ${requestId} rejected.`);
+      }
+      setTopUpRequests(await api.listWalletTopUpRequests());
     } catch (actionError) {
       setError(actionError.message);
     } finally {
@@ -663,6 +687,63 @@ export default function AdminPage() {
             </article>
           ))}
         </div>
+      </article>
+
+      <article className="card" data-testid="wallet-topup-approval">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Wallet Verification</p>
+            <h2>Top-up approval queue</h2>
+          </div>
+          <span className="pill pill--accent">
+            {topUpRequests.filter((request) => request.status === 'PENDING').length} pending
+          </span>
+        </div>
+        {topUpRequests.length === 0 ? (
+          <p className="muted">No wallet top-up requests have been submitted yet.</p>
+        ) : (
+          <div className="order-list">
+            {topUpRequests.map((request) => (
+              <article className="service-panel" key={request.id}>
+                <div className="service-panel__top">
+                  <div>
+                    <strong>Top-up #{request.id}</strong>
+                    <p className="muted">
+                      User {request.userId} | {formatDate(request.createdAt || request.updatedAt)}
+                    </p>
+                  </div>
+                  <span className={`status-pill status-pill--${slugStatus(request.status)}`}>{request.status}</span>
+                </div>
+                <div className="summary-list">
+                  <div className="summary-row">
+                    <span>Amount</span>
+                    <strong>{formatCurrency(request.amount)}</strong>
+                  </div>
+                </div>
+                {request.status === 'PENDING' && (
+                  <div className="button-row">
+                    <button
+                      className="button button--secondary"
+                      disabled={busyKey.startsWith(`topup-${request.id}`)}
+                      onClick={() => handleTopUpAction(request.id, 'approve')}
+                      type="button"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      className="button button--ghost"
+                      disabled={busyKey.startsWith(`topup-${request.id}`)}
+                      onClick={() => handleTopUpAction(request.id, 'reject')}
+                      type="button"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
       </article>
 
       <article className="card" data-testid="voucher-redemption-audit">

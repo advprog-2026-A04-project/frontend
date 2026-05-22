@@ -52,6 +52,8 @@ Recent deploy workflow fixes:
 | Logs | Cloud Run revision logs by service and revision |
 | Functional observability | Selenium artifacts include screenshots, API details, and per-scenario summaries |
 
+Wallet top-up observability is split between buyer and admin flows: buyers create pending top-up requests from `/wallet`, and admins review/approve/reject those requests from the admin console. This matches the Wallet service authorization model and avoids exposing internal service tokens in the browser.
+
 Manual dashboard path:
 
 1. Open Google Cloud Console for project `project-58e5335e-d6a4-4499-b08`.
@@ -88,4 +90,3 @@ gcloud run services update-traffic order-api --region us-central1 --to-revisions
 | Public Prometheus dashboard export | PARTIAL. The project relies on Cloud Run/Cloud SQL metrics rather than a committed Grafana dashboard for every service. |
 | Database migration automation for every service | PARTIAL. Voucher has stronger DB provisioning evidence; other services should add Flyway or Liquibase. |
 | Secret correctness | Requires existing GitHub/GCP secrets. This pass normalizes malformed values at deploy time but does not print or rewrite secret contents. |
-

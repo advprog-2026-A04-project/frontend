@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 import pytest
 
 from verifier.sanity import extract_origin, verify_backend_health, verify_cors, verify_frontend_reachable
-from verifier.utils import normalize_code, parse_currency, round_up_to_step
+from verifier.utils import normalize_code, parse_currency
 from verifier.verdicts import FAILED, VERIFIED
 
 
@@ -233,7 +233,7 @@ def test_final_navigation_and_validation_scenarios(
             pages.catalog.load()
             labels = pages.catalog.category_labels()
             details["category_labels"] = labels
-            assert "All" in labels
+            assert any(label.strip().upper() == "ALL" for label in labels)
             if len(labels) > 1:
                 selected = labels[1]
                 badges = pages.catalog.wait_for_category_badges(selected)
@@ -674,7 +674,7 @@ def test_route_guards_search_filters_and_role_navigation(
         scenario_artifacts.save_screenshot("protected_wallet_redirect.png", pages.driver)
 
         pages.login.login(settings.buyer_email, settings.buyer_password)
-        pages.wallet.wait_for_text("Add balance instantly")
+        pages.wallet.wait_for_text("Request balance top-up")
         wait_for_path(pages, "/wallet")
         scenario_artifacts.save_screenshot("wallet_after_guarded_login.png", pages.driver)
 
@@ -896,15 +896,16 @@ def test_checkout_wallet_history_and_order_views(
             evidence=scenario_artifacts,
             evidence_name="wallet_transactions_before",
         ).payload
-        wallet_balance_ui_before = parse_currency(pages.wallet.balance_text())
         target_balance = expected["total_paid"] + Decimal("50000")
-        top_up_amount = round_up_to_step(
-            max(Decimal("0"), target_balance - wallet_balance_ui_before),
-            Decimal("10000"),
+        wallet_setup_topup = setup_helper.top_up_to_balance(
+            buyer,
+            target_balance,
+            evidence=scenario_artifacts,
+            prefix="wallet_ui_setup_topup",
         )
-        if top_up_amount > 0:
-            pages.wallet.top_up(int(top_up_amount))
-            pages.wallet.wait_for_top_up_success()
+        details["wallet_setup_topup"] = wallet_setup_topup
+
+        pages.wallet.load()
         scenario_artifacts.save_screenshot("wallet_after_topup.png", pages.driver)
 
         after_topup_balance = Decimal(

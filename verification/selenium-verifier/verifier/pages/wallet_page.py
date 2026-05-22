@@ -9,7 +9,7 @@ from .base_page import BasePage
 class WalletPage(BasePage):
     def load(self) -> None:
         self.open("/wallet")
-        self.wait_for_text("Add balance instantly")
+        self.wait_for_text("Request balance top-up")
         self.pause_checkpoint("wallet_loaded")
 
     def balance_text(self) -> str:
@@ -21,9 +21,9 @@ class WalletPage(BasePage):
 
     def wait_for_top_up_success(self) -> str:
         element = self.wait.until(
-            EC.visibility_of_element_located((By.XPATH, "//*[contains(normalize-space(), 'was marked successful.')]"))
+            EC.visibility_of_element_located((By.XPATH, "//*[contains(normalize-space(), 'submitted for admin approval.')]"))
         )
-        self.pause_checkpoint("wallet_topup_success")
+        self.pause_checkpoint("wallet_topup_submitted")
         return element.text
 
     def transaction_types(self) -> list[str]:

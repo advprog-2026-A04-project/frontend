@@ -325,10 +325,6 @@ export const api = {
       body: { userId, amount },
     });
 
-    await request('wallet', `/wallet/topup/${topUpRequest.requestId}/mark-success`, {
-      method: 'POST',
-    });
-
     const [wallet, transactions] = await Promise.all([
       this.getWallet(userId),
       this.listWalletTransactions(userId),
@@ -338,7 +334,21 @@ export const api = {
       wallet,
       transactions,
       requestId: topUpRequest.requestId,
+      approved: false,
     };
+  },
+  listWalletTopUpRequests() {
+    return request('wallet', '/wallet/admin/topups');
+  },
+  markWalletTopUpSuccess(requestId) {
+    return request('wallet', `/wallet/topup/${requestId}/mark-success`, {
+      method: 'POST',
+    });
+  },
+  markWalletTopUpFailed(requestId) {
+    return request('wallet', `/wallet/topup/${requestId}/mark-failed`, {
+      method: 'POST',
+    });
   },
   listOrders() {
     return request('order', '/orders/my');

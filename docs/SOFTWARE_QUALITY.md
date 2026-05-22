@@ -31,7 +31,7 @@
 | Order | 95.48% | 90.09% | PASS |
 | Wallet | 98.65% | 98.39% | PASS |
 | Voucher/Promo | 100% | 94.44% | PASS |
-| Frontend unit tests | 40.68% | 39.23% | PARTIAL |
+| Frontend unit tests | 39.73% | 38.76% | PARTIAL |
 
 Frontend unit coverage is not presented as 90%+. The frontend grading evidence is the combination of lint/build/unit tests plus 32 Selenium scenarios that exercise the deployed UI and backend integration.
 
@@ -44,7 +44,7 @@ The verifier currently collects 32 browser scenarios, including:
 - catalog browse, aliases, search, filter, and empty state
 - protected-route validation for guest users
 - checkout, insufficient balance rejection, duplicate-submit regression
-- wallet history and payment/refund visibility
+- wallet top-up request, admin-backed approval evidence, history, and payment/refund visibility
 - voucher validation, public voucher UI, admin token negative case, admin voucher management
 - order lifecycle, invalid transitions, rating, cancellation, admin monitoring
 - deployed health/environment sanity
@@ -59,4 +59,3 @@ Run commands are documented in `verification/selenium-verifier/README.md`.
 | Public Selenium report retention | Requires GitHub Actions artifact or local report upload for final grading. |
 | Cross-service error format consistency | Still uneven and should be standardized after grading. |
 | Database migrations | Voucher has stronger migration/provisioning evidence; other services need Flyway/Liquibase hardening. |
-

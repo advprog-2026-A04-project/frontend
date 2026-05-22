@@ -18,8 +18,21 @@ class HomePage(BasePage):
         self.click_xpath("//a[normalize-space()='Log In']")
 
     def featured_card_count(self) -> int:
-        cards = self.driver.find_elements(By.CSS_SELECTOR, ".product-card")
-        return len(cards)
+        elements = self.wait.until(
+            lambda driver: driver.find_elements(By.CSS_SELECTOR, ".product-card")
+            or driver.find_elements(
+                By.XPATH,
+                "//*[contains(normalize-space(),'No products were returned by Inventory.')]",
+            )
+            or False
+        )
+        return len(
+            [
+                element
+                for element in elements
+                if "product-card" in (element.get_attribute("class") or "")
+            ]
+        )
 
     def service_health_count(self) -> int:
         xpath = "//h2[contains(normalize-space(),'Deployed integration snapshot')]/ancestor::section[1]//article"

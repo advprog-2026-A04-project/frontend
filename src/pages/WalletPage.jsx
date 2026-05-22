@@ -59,7 +59,7 @@ export default function WalletPage() {
       const result = await api.topUpWallet(user.id, amount);
       setWallet(result.wallet);
       setTransactions(result.transactions);
-      setMessage(`Top-up request ${result.requestId} was marked successful.`);
+      setMessage(`Top-up request ${result.requestId} was submitted for admin approval.`);
     } catch (submissionError) {
       setError(submissionError.message);
     } finally {
@@ -109,7 +109,7 @@ export default function WalletPage() {
                 </div>
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Top up</p>
-                  <h2 className="text-2xl font-black text-white">Add balance instantly</h2>
+                  <h2 className="text-2xl font-black text-white">Request balance top-up</h2>
                 </div>
               </div>
 
