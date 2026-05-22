@@ -35,4 +35,16 @@ describe('productImages', () => {
     expect(decoded).toContain('Origin: France');
     expect(decoded).toContain('Stock 20');
   });
+
+  it('uses safe defaults and truncates long generated fallback text', () => {
+    const source = buildFallbackProductImage({
+      name: 'A very long marketplace product name that should be trimmed before it is embedded into the generated SVG title',
+    });
+    const defaultSource = buildFallbackProductImage();
+
+    expect(decodeURIComponent(source)).toContain('A very long marketplace product name that should be...');
+    expect(decodeURIComponent(defaultSource)).toContain('JSON product');
+    expect(decodeURIComponent(defaultSource)).toContain('Stock -');
+    expect(resolveProductImage({ imageUrl: 'data:image/png;base64,abc' })).toBe('data:image/png;base64,abc');
+  });
 });

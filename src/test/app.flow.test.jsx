@@ -2,15 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import App from '../App';
-
-function jsonResponse(payload, status = 200) {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-}
+import { jsonResponse } from './testUtils.jsx';
 
 function installFetchMock(routes) {
   global.fetch = vi.fn(async (input, init = {}) => {

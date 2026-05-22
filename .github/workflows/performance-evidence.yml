@@ -1,0 +1,40 @@
+name: Performance Evidence
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * 1'
+
+jobs:
+  cloud-run-performance:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.19.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate APDEX, load, and profiling evidence
+        env:
+          TARGET_FRONTEND_URL: https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app
+          APDEX_T_MS: 500
+          PERF_LOAD_REQUESTS: 40
+          PERF_LOAD_CONCURRENCY: 5
+        run: npm run perf:evidence
+
+      - name: Upload performance reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-apdex-profiling
+          if-no-files-found: error
+          path: |
+            reports/performance/**

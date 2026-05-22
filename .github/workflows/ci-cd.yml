@@ -39,6 +39,15 @@ jobs:
       - name: Unit tests
         run: npm run test
 
+      - name: Upload frontend coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          if-no-files-found: error
+          path: |
+            coverage/**
+
       - name: Build
         env:
           VITE_AUTH_BASE_URL: ${{ secrets.VITE_AUTH_BASE_URL }}
@@ -80,3 +89,12 @@ jobs:
             --region "$CLOUD_RUN_REGION" \
             --format='value(status.url)')"
           curl --fail --silent --show-error "$url/status"
+
+      - name: Upload deployment smoke evidence
+        if: always() && github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-deployment-smoke
+          if-no-files-found: warn
+          path: |
+            reports/performance/**

@@ -12,6 +12,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run --coverage",
+    "perf:evidence": "node scripts/performance-evidence.mjs",
     "e2e:selenium": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-selenium.ps1",
     "e2e:selenium:headed": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-selenium.ps1 -Headed",
     "e2e:demo": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-selenium.ps1 -Headed -DemoOnly"

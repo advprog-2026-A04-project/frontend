@@ -1,0 +1,1011 @@
+{
+  "generatedAt": "2026-05-22T09:39:01.317Z",
+  "targetFrontendUrl": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app",
+  "apdex": {
+    "thresholdMs": 500,
+    "satisfied": 35,
+    "tolerating": 0,
+    "frustrated": 0,
+    "total": 35,
+    "score": 1
+  },
+  "beforeAfter": {
+    "baseline": {
+      "frontend-home": {
+        "total": 2,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 236.93,
+        "p50Ms": 236.93,
+        "p95Ms": 357.34,
+        "maxMs": 357.34,
+        "averageMs": 297.13
+      },
+      "frontend-status": {
+        "total": 2,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 234.71,
+        "p50Ms": 234.71,
+        "p95Ms": 274.49,
+        "maxMs": 274.49,
+        "averageMs": 254.6
+      },
+      "auth-health": {
+        "total": 2,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 239.98,
+        "p50Ms": 239.98,
+        "p95Ms": 279.31,
+        "maxMs": 279.31,
+        "averageMs": 259.64
+      },
+      "inventory-health": {
+        "total": 2,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 242.06,
+        "p50Ms": 242.06,
+        "p95Ms": 272.64,
+        "maxMs": 272.64,
+        "averageMs": 257.35
+      },
+      "wallet-health": {
+        "total": 2,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 243.15,
+        "p50Ms": 243.15,
+        "p95Ms": 277.67,
+        "maxMs": 277.67,
+        "averageMs": 260.41
+      },
+      "order-health": {
+        "total": 2,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 242.78,
+        "p50Ms": 242.78,
+        "p95Ms": 276.91,
+        "maxMs": 276.91,
+        "averageMs": 259.85
+      },
+      "voucher-health": {
+        "total": 2,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 253.62,
+        "p50Ms": 253.62,
+        "p95Ms": 278.75,
+        "maxMs": 278.75,
+        "averageMs": 266.19
+      }
+    },
+    "current": {
+      "frontend-home": {
+        "total": 5,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 236.04,
+        "p50Ms": 236.49,
+        "p95Ms": 242.15,
+        "maxMs": 242.15,
+        "averageMs": 237.8
+      },
+      "frontend-status": {
+        "total": 5,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 232.85,
+        "p50Ms": 236.22,
+        "p95Ms": 236.92,
+        "maxMs": 236.92,
+        "averageMs": 235.13
+      },
+      "auth-health": {
+        "total": 5,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 237.77,
+        "p50Ms": 243.18,
+        "p95Ms": 246.24,
+        "maxMs": 246.24,
+        "averageMs": 242.57
+      },
+      "inventory-health": {
+        "total": 5,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 239.9,
+        "p50Ms": 242.04,
+        "p95Ms": 243.55,
+        "maxMs": 243.55,
+        "averageMs": 241.76
+      },
+      "wallet-health": {
+        "total": 5,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 238.89,
+        "p50Ms": 239.95,
+        "p95Ms": 244.67,
+        "maxMs": 244.67,
+        "averageMs": 240.79
+      },
+      "order-health": {
+        "total": 5,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 240.48,
+        "p50Ms": 242.2,
+        "p95Ms": 250.49,
+        "maxMs": 250.49,
+        "averageMs": 243.68
+      },
+      "voucher-health": {
+        "total": 5,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 239.65,
+        "p50Ms": 242.54,
+        "p95Ms": 244.86,
+        "maxMs": 244.86,
+        "averageMs": 242.6
+      }
+    }
+  },
+  "load": {
+    "requests": 20,
+    "concurrency": 4,
+    "summary": {
+      "total": 20,
+      "failed": 0,
+      "availability": 1,
+      "minMs": 233.64,
+      "p50Ms": 239.43,
+      "p95Ms": 246.34,
+      "maxMs": 281.76,
+      "averageMs": 241.24
+    },
+    "byTarget": {
+      "frontend-home": {
+        "total": 3,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 234.23,
+        "p50Ms": 234.69,
+        "p95Ms": 236.86,
+        "maxMs": 236.86,
+        "averageMs": 235.26
+      },
+      "frontend-status": {
+        "total": 3,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 233.64,
+        "p50Ms": 235.22,
+        "p95Ms": 237.02,
+        "maxMs": 237.02,
+        "averageMs": 235.29
+      },
+      "auth-health": {
+        "total": 3,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 238.3,
+        "p50Ms": 241.26,
+        "p95Ms": 241.45,
+        "maxMs": 241.45,
+        "averageMs": 240.34
+      },
+      "inventory-health": {
+        "total": 3,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 239.43,
+        "p50Ms": 240.31,
+        "p95Ms": 241.07,
+        "maxMs": 241.07,
+        "averageMs": 240.27
+      },
+      "wallet-health": {
+        "total": 3,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 235.39,
+        "p50Ms": 240.19,
+        "p95Ms": 246.34,
+        "maxMs": 246.34,
+        "averageMs": 240.64
+      },
+      "order-health": {
+        "total": 3,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 241.44,
+        "p50Ms": 243.37,
+        "p95Ms": 281.76,
+        "maxMs": 281.76,
+        "averageMs": 255.52
+      },
+      "voucher-health": {
+        "total": 2,
+        "failed": 0,
+        "availability": 1,
+        "minMs": 237.86,
+        "p50Ms": 237.86,
+        "p95Ms": 244.97,
+        "maxMs": 244.97,
+        "averageMs": 241.42
+      }
+    }
+  },
+  "samples": {
+    "baseline": [
+      {
+        "label": "before-warmup",
+        "sampleIndex": 0,
+        "measuredAt": "2026-05-22T09:38:47.933Z",
+        "target": "frontend-home",
+        "name": "Frontend home",
+        "url": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/",
+        "ok": true,
+        "status": 200,
+        "durationMs": 357.34
+      },
+      {
+        "label": "before-warmup",
+        "sampleIndex": 0,
+        "measuredAt": "2026-05-22T09:38:48.292Z",
+        "target": "frontend-status",
+        "name": "Frontend status",
+        "url": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/status",
+        "ok": true,
+        "status": 200,
+        "durationMs": 274.49
+      },
+      {
+        "label": "before-warmup",
+        "sampleIndex": 0,
+        "measuredAt": "2026-05-22T09:38:48.567Z",
+        "target": "auth-health",
+        "name": "Auth/Profile health",
+        "url": "https://auth-profile-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 279.31
+      },
+      {
+        "label": "before-warmup",
+        "sampleIndex": 0,
+        "measuredAt": "2026-05-22T09:38:48.846Z",
+        "target": "inventory-health",
+        "name": "Inventory health",
+        "url": "https://inventory-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 272.64
+      },
+      {
+        "label": "before-warmup",
+        "sampleIndex": 0,
+        "measuredAt": "2026-05-22T09:38:49.119Z",
+        "target": "wallet-health",
+        "name": "Wallet health",
+        "url": "https://wallet-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 277.67
+      },
+      {
+        "label": "before-warmup",
+        "sampleIndex": 0,
+        "measuredAt": "2026-05-22T09:38:49.397Z",
+        "target": "order-health",
+        "name": "Order health",
+        "url": "https://order-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 276.91
+      },
+      {
+        "label": "before-warmup",
+        "sampleIndex": 0,
+        "measuredAt": "2026-05-22T09:38:49.674Z",
+        "target": "voucher-health",
+        "name": "Voucher health",
+        "url": "https://voucher-promo-api-osvihgaoya-uc.a.run.app/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 278.75
+      },
+      {
+        "label": "before-warmup",
+        "sampleIndex": 1,
+        "measuredAt": "2026-05-22T09:38:49.952Z",
+        "target": "frontend-home",
+        "name": "Frontend home",
+        "url": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/",
+        "ok": true,
+        "status": 200,
+        "durationMs": 236.93
+      },
+      {
+        "label": "before-warmup",
+        "sampleIndex": 1,
+        "measuredAt": "2026-05-22T09:38:50.189Z",
+        "target": "frontend-status",
+        "name": "Frontend status",
+        "url": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/status",
+        "ok": true,
+        "status": 200,
+        "durationMs": 234.71
+      },
+      {
+        "label": "before-warmup",
+        "sampleIndex": 1,
+        "measuredAt": "2026-05-22T09:38:50.424Z",
+        "target": "auth-health",
+        "name": "Auth/Profile health",
+        "url": "https://auth-profile-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 239.98
+      },
+      {
+        "label": "before-warmup",
+        "sampleIndex": 1,
+        "measuredAt": "2026-05-22T09:38:50.664Z",
+        "target": "inventory-health",
+        "name": "Inventory health",
+        "url": "https://inventory-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 242.06
+      },
+      {
+        "label": "before-warmup",
+        "sampleIndex": 1,
+        "measuredAt": "2026-05-22T09:38:50.906Z",
+        "target": "wallet-health",
+        "name": "Wallet health",
+        "url": "https://wallet-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 243.15
+      },
+      {
+        "label": "before-warmup",
+        "sampleIndex": 1,
+        "measuredAt": "2026-05-22T09:38:51.150Z",
+        "target": "order-health",
+        "name": "Order health",
+        "url": "https://order-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 242.78
+      },
+      {
+        "label": "before-warmup",
+        "sampleIndex": 1,
+        "measuredAt": "2026-05-22T09:38:51.393Z",
+        "target": "voucher-health",
+        "name": "Voucher health",
+        "url": "https://voucher-promo-api-osvihgaoya-uc.a.run.app/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 253.62
+      }
+    ],
+    "current": [
+      {
+        "label": "after-warmup",
+        "sampleIndex": 0,
+        "measuredAt": "2026-05-22T09:38:51.646Z",
+        "target": "frontend-home",
+        "name": "Frontend home",
+        "url": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/",
+        "ok": true,
+        "status": 200,
+        "durationMs": 237.85
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 0,
+        "measuredAt": "2026-05-22T09:38:51.884Z",
+        "target": "frontend-status",
+        "name": "Frontend status",
+        "url": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/status",
+        "ok": true,
+        "status": 200,
+        "durationMs": 236.92
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 0,
+        "measuredAt": "2026-05-22T09:38:52.121Z",
+        "target": "auth-health",
+        "name": "Auth/Profile health",
+        "url": "https://auth-profile-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 243.18
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 0,
+        "measuredAt": "2026-05-22T09:38:52.364Z",
+        "target": "inventory-health",
+        "name": "Inventory health",
+        "url": "https://inventory-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 240.14
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 0,
+        "measuredAt": "2026-05-22T09:38:52.605Z",
+        "target": "wallet-health",
+        "name": "Wallet health",
+        "url": "https://wallet-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 240.59
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 0,
+        "measuredAt": "2026-05-22T09:38:52.845Z",
+        "target": "order-health",
+        "name": "Order health",
+        "url": "https://order-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 250.49
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 0,
+        "measuredAt": "2026-05-22T09:38:53.096Z",
+        "target": "voucher-health",
+        "name": "Voucher health",
+        "url": "https://voucher-promo-api-osvihgaoya-uc.a.run.app/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 244.86
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 1,
+        "measuredAt": "2026-05-22T09:38:53.341Z",
+        "target": "frontend-home",
+        "name": "Frontend home",
+        "url": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/",
+        "ok": true,
+        "status": 200,
+        "durationMs": 236.49
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 1,
+        "measuredAt": "2026-05-22T09:38:53.577Z",
+        "target": "frontend-status",
+        "name": "Frontend status",
+        "url": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/status",
+        "ok": true,
+        "status": 200,
+        "durationMs": 232.92
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 1,
+        "measuredAt": "2026-05-22T09:38:53.810Z",
+        "target": "auth-health",
+        "name": "Auth/Profile health",
+        "url": "https://auth-profile-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 243.67
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 1,
+        "measuredAt": "2026-05-22T09:38:54.054Z",
+        "target": "inventory-health",
+        "name": "Inventory health",
+        "url": "https://inventory-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 242.04
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 1,
+        "measuredAt": "2026-05-22T09:38:54.296Z",
+        "target": "wallet-health",
+        "name": "Wallet health",
+        "url": "https://wallet-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 244.67
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 1,
+        "measuredAt": "2026-05-22T09:38:54.541Z",
+        "target": "order-health",
+        "name": "Order health",
+        "url": "https://order-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 242.2
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 1,
+        "measuredAt": "2026-05-22T09:38:54.783Z",
+        "target": "voucher-health",
+        "name": "Voucher health",
+        "url": "https://voucher-promo-api-osvihgaoya-uc.a.run.app/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 243.73
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 2,
+        "measuredAt": "2026-05-22T09:38:55.027Z",
+        "target": "frontend-home",
+        "name": "Frontend home",
+        "url": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/",
+        "ok": true,
+        "status": 200,
+        "durationMs": 236.04
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 2,
+        "measuredAt": "2026-05-22T09:38:55.263Z",
+        "target": "frontend-status",
+        "name": "Frontend status",
+        "url": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/status",
+        "ok": true,
+        "status": 200,
+        "durationMs": 232.85
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 2,
+        "measuredAt": "2026-05-22T09:38:55.496Z",
+        "target": "auth-health",
+        "name": "Auth/Profile health",
+        "url": "https://auth-profile-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 241.99
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 2,
+        "measuredAt": "2026-05-22T09:38:55.738Z",
+        "target": "inventory-health",
+        "name": "Inventory health",
+        "url": "https://inventory-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 239.9
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 2,
+        "measuredAt": "2026-05-22T09:38:55.978Z",
+        "target": "wallet-health",
+        "name": "Wallet health",
+        "url": "https://wallet-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 239.87
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 2,
+        "measuredAt": "2026-05-22T09:38:56.218Z",
+        "target": "order-health",
+        "name": "Order health",
+        "url": "https://order-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 240.48
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 2,
+        "measuredAt": "2026-05-22T09:38:56.458Z",
+        "target": "voucher-health",
+        "name": "Voucher health",
+        "url": "https://voucher-promo-api-osvihgaoya-uc.a.run.app/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 242.54
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 3,
+        "measuredAt": "2026-05-22T09:38:56.701Z",
+        "target": "frontend-home",
+        "name": "Frontend home",
+        "url": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/",
+        "ok": true,
+        "status": 200,
+        "durationMs": 236.49
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 3,
+        "measuredAt": "2026-05-22T09:38:56.937Z",
+        "target": "frontend-status",
+        "name": "Frontend status",
+        "url": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/status",
+        "ok": true,
+        "status": 200,
+        "durationMs": 236.22
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 3,
+        "measuredAt": "2026-05-22T09:38:57.174Z",
+        "target": "auth-health",
+        "name": "Auth/Profile health",
+        "url": "https://auth-profile-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 237.77
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 3,
+        "measuredAt": "2026-05-22T09:38:57.412Z",
+        "target": "inventory-health",
+        "name": "Inventory health",
+        "url": "https://inventory-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 243.55
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 3,
+        "measuredAt": "2026-05-22T09:38:57.655Z",
+        "target": "wallet-health",
+        "name": "Wallet health",
+        "url": "https://wallet-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 239.95
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 3,
+        "measuredAt": "2026-05-22T09:38:57.895Z",
+        "target": "order-health",
+        "name": "Order health",
+        "url": "https://order-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 243.56
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 3,
+        "measuredAt": "2026-05-22T09:38:58.139Z",
+        "target": "voucher-health",
+        "name": "Voucher health",
+        "url": "https://voucher-promo-api-osvihgaoya-uc.a.run.app/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 239.65
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 4,
+        "measuredAt": "2026-05-22T09:38:58.378Z",
+        "target": "frontend-home",
+        "name": "Frontend home",
+        "url": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/",
+        "ok": true,
+        "status": 200,
+        "durationMs": 242.15
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 4,
+        "measuredAt": "2026-05-22T09:38:58.621Z",
+        "target": "frontend-status",
+        "name": "Frontend status",
+        "url": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/status",
+        "ok": true,
+        "status": 200,
+        "durationMs": 236.74
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 4,
+        "measuredAt": "2026-05-22T09:38:58.857Z",
+        "target": "auth-health",
+        "name": "Auth/Profile health",
+        "url": "https://auth-profile-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 246.24
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 4,
+        "measuredAt": "2026-05-22T09:38:59.104Z",
+        "target": "inventory-health",
+        "name": "Inventory health",
+        "url": "https://inventory-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 243.17
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 4,
+        "measuredAt": "2026-05-22T09:38:59.347Z",
+        "target": "wallet-health",
+        "name": "Wallet health",
+        "url": "https://wallet-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 238.89
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 4,
+        "measuredAt": "2026-05-22T09:38:59.586Z",
+        "target": "order-health",
+        "name": "Order health",
+        "url": "https://order-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 241.68
+      },
+      {
+        "label": "after-warmup",
+        "sampleIndex": 4,
+        "measuredAt": "2026-05-22T09:38:59.828Z",
+        "target": "voucher-health",
+        "name": "Voucher health",
+        "url": "https://voucher-promo-api-osvihgaoya-uc.a.run.app/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 242.21
+      }
+    ],
+    "load": [
+      {
+        "label": "load-smoke",
+        "sampleIndex": 1,
+        "measuredAt": "2026-05-22T09:39:00.070Z",
+        "target": "frontend-status",
+        "name": "Frontend status",
+        "url": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/status",
+        "ok": true,
+        "status": 200,
+        "durationMs": 235.22
+      },
+      {
+        "label": "load-smoke",
+        "sampleIndex": 0,
+        "measuredAt": "2026-05-22T09:39:00.070Z",
+        "target": "frontend-home",
+        "name": "Frontend home",
+        "url": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/",
+        "ok": true,
+        "status": 200,
+        "durationMs": 236.86
+      },
+      {
+        "label": "load-smoke",
+        "sampleIndex": 3,
+        "measuredAt": "2026-05-22T09:39:00.071Z",
+        "target": "inventory-health",
+        "name": "Inventory health",
+        "url": "https://inventory-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 239.43
+      },
+      {
+        "label": "load-smoke",
+        "sampleIndex": 2,
+        "measuredAt": "2026-05-22T09:39:00.071Z",
+        "target": "auth-health",
+        "name": "Auth/Profile health",
+        "url": "https://auth-profile-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 241.45
+      },
+      {
+        "label": "load-smoke",
+        "sampleIndex": 7,
+        "measuredAt": "2026-05-22T09:39:00.312Z",
+        "target": "frontend-home",
+        "name": "Frontend home",
+        "url": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/",
+        "ok": true,
+        "status": 200,
+        "durationMs": 234.23
+      },
+      {
+        "label": "load-smoke",
+        "sampleIndex": 5,
+        "measuredAt": "2026-05-22T09:39:00.307Z",
+        "target": "order-health",
+        "name": "Order health",
+        "url": "https://order-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 241.44
+      },
+      {
+        "label": "load-smoke",
+        "sampleIndex": 4,
+        "measuredAt": "2026-05-22T09:39:00.306Z",
+        "target": "wallet-health",
+        "name": "Wallet health",
+        "url": "https://wallet-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 246.34
+      },
+      {
+        "label": "load-smoke",
+        "sampleIndex": 6,
+        "measuredAt": "2026-05-22T09:39:00.310Z",
+        "target": "voucher-health",
+        "name": "Voucher health",
+        "url": "https://voucher-promo-api-osvihgaoya-uc.a.run.app/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 244.97
+      },
+      {
+        "label": "load-smoke",
+        "sampleIndex": 8,
+        "measuredAt": "2026-05-22T09:39:00.546Z",
+        "target": "frontend-status",
+        "name": "Frontend status",
+        "url": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/status",
+        "ok": true,
+        "status": 200,
+        "durationMs": 237.02
+      },
+      {
+        "label": "load-smoke",
+        "sampleIndex": 9,
+        "measuredAt": "2026-05-22T09:39:00.548Z",
+        "target": "auth-health",
+        "name": "Auth/Profile health",
+        "url": "https://auth-profile-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 238.3
+      },
+      {
+        "label": "load-smoke",
+        "sampleIndex": 11,
+        "measuredAt": "2026-05-22T09:39:00.555Z",
+        "target": "wallet-health",
+        "name": "Wallet health",
+        "url": "https://wallet-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 235.39
+      },
+      {
+        "label": "load-smoke",
+        "sampleIndex": 10,
+        "measuredAt": "2026-05-22T09:39:00.552Z",
+        "target": "inventory-health",
+        "name": "Inventory health",
+        "url": "https://inventory-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 240.31
+      },
+      {
+        "label": "load-smoke",
+        "sampleIndex": 13,
+        "measuredAt": "2026-05-22T09:39:00.787Z",
+        "target": "voucher-health",
+        "name": "Voucher health",
+        "url": "https://voucher-promo-api-osvihgaoya-uc.a.run.app/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 237.86
+      },
+      {
+        "label": "load-smoke",
+        "sampleIndex": 14,
+        "measuredAt": "2026-05-22T09:39:00.791Z",
+        "target": "frontend-home",
+        "name": "Frontend home",
+        "url": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/",
+        "ok": true,
+        "status": 200,
+        "durationMs": 234.69
+      },
+      {
+        "label": "load-smoke",
+        "sampleIndex": 15,
+        "measuredAt": "2026-05-22T09:39:00.792Z",
+        "target": "frontend-status",
+        "name": "Frontend status",
+        "url": "https://advprog-frontend-m25-m50-osvihgaoya-uc.a.run.app/status",
+        "ok": true,
+        "status": 200,
+        "durationMs": 233.64
+      },
+      {
+        "label": "load-smoke",
+        "sampleIndex": 12,
+        "measuredAt": "2026-05-22T09:39:00.783Z",
+        "target": "order-health",
+        "name": "Order health",
+        "url": "https://order-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 243.37
+      },
+      {
+        "label": "load-smoke",
+        "sampleIndex": 16,
+        "measuredAt": "2026-05-22T09:39:01.025Z",
+        "target": "auth-health",
+        "name": "Auth/Profile health",
+        "url": "https://auth-profile-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 241.26
+      },
+      {
+        "label": "load-smoke",
+        "sampleIndex": 18,
+        "measuredAt": "2026-05-22T09:39:01.026Z",
+        "target": "wallet-health",
+        "name": "Wallet health",
+        "url": "https://wallet-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 240.19
+      },
+      {
+        "label": "load-smoke",
+        "sampleIndex": 17,
+        "measuredAt": "2026-05-22T09:39:01.026Z",
+        "target": "inventory-health",
+        "name": "Inventory health",
+        "url": "https://inventory-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 241.07
+      },
+      {
+        "label": "load-smoke",
+        "sampleIndex": 19,
+        "measuredAt": "2026-05-22T09:39:01.027Z",
+        "target": "order-health",
+        "name": "Order health",
+        "url": "https://order-api-osvihgaoya-uc.a.run.app/actuator/health",
+        "ok": true,
+        "status": 200,
+        "durationMs": 281.76
+      }
+    ]
+  }
+}

@@ -5,8 +5,8 @@
 | Area | Tools |
 |---|---|
 | Backend tests | Gradle, JUnit, Spring Boot test, JaCoCo |
-| Static analysis | PMD, Checkstyle, CodeQL, OSSF Scorecard or dependency review where configured |
-| Frontend tests | Vitest, Testing Library, ESLint, Vite build |
+| Static analysis | PMD, Checkstyle, CodeQL, OSSF Scorecard, dependency review |
+| Frontend tests | Vitest, Testing Library, ESLint, Vite build, enforced V8 coverage thresholds |
 | Functional tests | Selenium browser verifier with pytest, screenshots, JSON summaries, optional HTML report |
 | Security | GitHub OIDC for Cloud Run deploy, runtime-only admin token, role/authorization Selenium checks |
 
@@ -31,9 +31,9 @@
 | Order | 95.48% | 90.09% | PASS |
 | Wallet | 98.65% | 98.39% | PASS |
 | Voucher/Promo | 100% | 94.44% | PASS |
-| Frontend unit tests | 39.73% | 38.76% | PARTIAL |
+| Frontend unit tests | 94.75% | 90.79% | PASS |
 
-Frontend unit coverage is not presented as 90%+. The frontend grading evidence is the combination of lint/build/unit tests plus 32 Selenium scenarios that exercise the deployed UI and backend integration.
+Frontend coverage is enforced in `vite.config.js` with 90% global thresholds for statements, branches, functions, and lines. Latest local run: statements 93.76%, branches 90.79%, functions 91.11%, lines 94.75%.
 
 ## Selenium Scenarios
 
@@ -55,7 +55,7 @@ Run commands are documented in `verification/selenium-verifier/README.md`.
 
 | Risk | Status |
 |---|---|
-| Frontend unit coverage below 90% | Accepted partial; Selenium covers user-facing integration. |
+| Lighthouse artifact freshness | Run the `Lighthouse` workflow before demo and keep the `lighthouse-reports` artifact. |
 | Public Selenium report retention | Manual GitHub Actions workflow uploads `live-selenium-artifacts`; retention follows GitHub Actions artifact policy. |
 | Cross-service error format consistency | Still uneven and should be standardized after grading. |
 | Database migrations | Voucher has stronger migration/provisioning evidence; other services need Flyway/Liquibase hardening. |

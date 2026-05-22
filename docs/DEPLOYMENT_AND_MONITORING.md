@@ -33,7 +33,7 @@ All runtime services deploy to Google Cloud Run in project `project-58e5335e-d6a
 | Order | CI, CodeQL, Scorecard, CD, Gradle check, Cloud Run deploy |
 | Wallet | CI and CD, staging-gated main promotion, Gradle check, Cloud Run deploy |
 | Voucher-Promo | CI, PMD, CodeQL, dependency review, PR policy, Google Cloud Run deploy |
-| frontend | CI/CD, lint, Vitest coverage, Vite build, Cloud Run deploy, manual live Selenium artifact workflow |
+| frontend | CI/CD, lint, Vitest 90% global coverage gate, Vite build, Cloud Run deploy, CodeQL, Scorecard, dependency review, performance evidence, Lighthouse, manual live Selenium artifact workflow |
 
 Recent deploy workflow fixes:
 
@@ -47,14 +47,23 @@ Recent deploy workflow fixes:
 | Signal | Evidence |
 |---|---|
 | Application health | Public Cloud Run health endpoints above |
-| Application performance | Cloud Run request count, latency, error count, CPU, and memory metrics in Google Cloud Console |
-| Database performance | Cloud SQL metrics where Cloud SQL is attached; for H2 demo deployments, database performance is limited to app-level latency and logs |
+| Application performance | Cloud Run request count, latency, error count, CPU, and memory metrics in Google Cloud Console; importable dashboard: `monitoring/cloud-run-dashboard.json` |
+| Database performance | Cloud SQL CPU, connections, disk, and PostgreSQL transaction dashboard: `monitoring/database-observability-dashboard.json`; for H2 demo deployments, database performance is limited to app-level latency and logs |
 | Logs | Cloud Run revision logs by service and revision |
 | Functional observability | Selenium artifacts include screenshots, API details, and per-scenario summaries |
+| APDEX/load/profile evidence | `npm run perf:evidence` writes `reports/performance/performance-apdex-report.md`, raw JSON, and a CPU profile |
+| Lighthouse evidence | `.github/workflows/lighthouse.yml` publishes the `lighthouse-reports` artifact |
 
 Wallet top-up observability is split between buyer and admin flows: buyers create pending top-up requests from `/wallet`, and admins review/approve/reject those requests from the admin console. This matches the Wallet service authorization model and avoids exposing internal service tokens in the browser.
 
 Final functional observability evidence: `verification-artifacts/live-report-final-32.html` shows 32/32 deployed Selenium scenarios passing. The manual `Live Selenium Verification` GitHub Actions workflow publishes the same verifier output as `live-selenium-artifacts`.
+
+Dashboard import path:
+
+```powershell
+gcloud monitoring dashboards create --config-from-file=monitoring/cloud-run-dashboard.json
+gcloud monitoring dashboards create --config-from-file=monitoring/database-observability-dashboard.json
+```
 
 Manual dashboard path:
 
@@ -89,6 +98,6 @@ gcloud run services update-traffic order-api --region us-central1 --to-revisions
 
 | Item | Status |
 |---|---|
-| Public Prometheus dashboard export | PARTIAL. The project relies on Cloud Run/Cloud SQL metrics rather than a committed Grafana dashboard for every service. |
+| Public Prometheus dashboard export | ACCEPTED ALTERNATIVE. The project uses committed Cloud Monitoring dashboard JSON instead of Grafana. |
 | Database migration automation for every service | PARTIAL. Voucher has stronger DB provisioning evidence; other services should add Flyway or Liquibase. |
 | Secret correctness | Requires existing GitHub/GCP secrets. This pass normalizes malformed values at deploy time but does not print or rewrite secret contents. |
