@@ -1574,6 +1574,128 @@ def test_admin_order_monitoring_and_checkout_visibility(
 
 @pytest.mark.live
 @pytest.mark.admin
+def test_admin_console_logout_clears_session(
+    settings,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "admin_console_logout_clears_session"
+    details = {}
+
+    try:
+        if not settings.admin_email or not settings.admin_password:
+            pytest.skip("Admin credentials are required for admin logout coverage.")
+
+        ui_login(pages, settings.admin_email, settings.admin_password, scenario_artifacts, "admin_logout")
+        pages.admin.load()
+        before_logout = session_snapshot(pages)
+        assert before_logout["role"] == "ADMIN"
+        scenario_artifacts.save_screenshot("admin_before_logout.png", pages.driver)
+
+        pages.admin.logout_via_ui()
+        pages.home.wait_for_text("Create Account")
+        pages.home.wait_for_local_storage_absent("json.sessionToken")
+        pages.home.wait_for_local_storage_absent("json.sessionUser")
+        after_logout = session_snapshot(pages)
+        scenario_artifacts.save_screenshot("admin_after_logout.png", pages.driver)
+
+        pages.driver.get(f"{settings.frontend_base_url.rstrip('/')}/admin")
+        pages.login.wait_for_text("Log in to continue.")
+        wait_for_path(pages, "/login")
+
+        details.update(
+            {
+                "before_logout": before_logout,
+                "after_logout": after_logout,
+                "redirect_path": pages.login.current_path(),
+            }
+        )
+        record_verified(artifact_manager, scenario_artifacts, scenario, details)
+    except Exception as error:  # noqa: BLE001
+        record_failed(artifact_manager, scenario_artifacts, pages, scenario, details, error)
+        raise
+
+
+@pytest.mark.live
+@pytest.mark.admin
+def test_admin_console_updates_order_status_from_monitoring(
+    settings,
+    services,
+    setup_helper,
+    pages,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = "admin_console_updates_order_status_from_monitoring"
+    details = {}
+
+    try:
+        require_admin_token(settings, "VOUCHER_ADMIN_TOKEN is required to prepare an admin status order.")
+        if not settings.internal_api_token:
+            pytest.skip("INTERNAL_API_TOKEN is required to prepare wallet balance for checkout.")
+
+        jastiper = setup_helper.login_existing_user_api(
+            settings.jastiper_email,
+            settings.jastiper_password,
+            evidence=scenario_artifacts,
+            evidence_name="admin_status_jastiper_login_api",
+        )
+        buyer, product, voucher, _expected, order_payload = build_paid_order(
+            settings,
+            services,
+            setup_helper,
+            scenario_artifacts,
+            "admin-status",
+            jastiper.user_id,
+        )
+        order_id = int(order_payload["id"])
+        admin = setup_helper.login_existing_user_api(
+            settings.admin_email,
+            settings.admin_password,
+            evidence=scenario_artifacts,
+            evidence_name="admin_status_admin_login_api",
+        )
+
+        ui_login(pages, admin.email, settings.admin_password, scenario_artifacts, "admin_status")
+        pages.admin.load()
+        pages.admin.wait_for_order(order_id)
+        assert "Paid" in pages.admin.order_status_text(order_id)
+        scenario_artifacts.save_screenshot("admin_status_order_paid.png", pages.driver)
+
+        pages.admin.click_transition(order_id, "Purchased")
+        pages.admin.wait_for_notice(f"Order {order_id} moved to Purchased.")
+        status_text = pages.admin.wait_for_order_status(order_id, "Purchased")
+        scenario_artifacts.save_screenshot("admin_status_order_purchased.png", pages.driver)
+
+        order_detail = services.order.detail(
+            order_id,
+            admin.token,
+            evidence=scenario_artifacts,
+            evidence_name="admin_status_order_detail",
+        ).payload["data"]
+        assert order_detail["status"] == "PURCHASED"
+
+        details.update(
+            {
+                "admin_id": admin.user_id,
+                "buyer_id": buyer.user_id,
+                "jastiper_id": jastiper.user_id,
+                "order_id": order_id,
+                "product_id": product.product_id,
+                "voucher_code": voucher.code,
+                "ui_status_text": status_text,
+                "api_status": order_detail["status"],
+            }
+        )
+        record_verified(artifact_manager, scenario_artifacts, scenario, details)
+    except Exception as error:  # noqa: BLE001
+        record_failed(artifact_manager, scenario_artifacts, pages, scenario, details, error)
+        raise
+
+
+@pytest.mark.live
+@pytest.mark.admin
 @pytest.mark.edge
 def test_expired_and_quota_exhausted_vouchers_are_rejected_or_hidden(
     settings,

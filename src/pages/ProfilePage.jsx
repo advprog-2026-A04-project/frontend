@@ -239,7 +239,7 @@ export default function ProfilePage() {
             </Link>
           )}
 
-          {user?.role === 'ADMIN' ? (
+          {user?.role === 'ADMIN' && (
             <Link className="rounded-[24px] border border-white/10 bg-white/5 p-6 transition-colors hover:border-cyan/40 hover:bg-white/10" to="/admin">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-300">
                 <span className="material-symbols-outlined">admin_panel_settings</span>
@@ -247,19 +247,19 @@ export default function ProfilePage() {
               <h2 className="text-lg font-bold text-white">Admin Console</h2>
               <p className="mt-2 text-sm text-slate-400">Monitor orders and manage voucher lifecycle safely.</p>
             </Link>
-          ) : (
-            <button
-              className="rounded-[24px] border border-white/10 bg-white/5 p-6 text-left transition-colors hover:border-rose-400/40 hover:bg-white/10"
-              onClick={handleLogout}
-              type="button"
-            >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-500/20 text-rose-300">
-                <span className="material-symbols-outlined">logout</span>
-              </div>
-              <h2 className="text-lg font-bold text-white">Logout</h2>
-              <p className="mt-2 text-sm text-slate-400">End the current JWT session and clear persisted browser state.</p>
-            </button>
           )}
+
+          <button
+            className="rounded-[24px] border border-white/10 bg-white/5 p-6 text-left transition-colors hover:border-rose-400/40 hover:bg-white/10"
+            onClick={handleLogout}
+            type="button"
+          >
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-500/20 text-rose-300">
+              <span className="material-symbols-outlined">logout</span>
+            </div>
+            <h2 className="text-lg font-bold text-white">Logout</h2>
+            <p className="mt-2 text-sm text-slate-400">End the current JWT session and clear persisted browser state.</p>
+          </button>
         </section>
       </section>
     </PageShell>

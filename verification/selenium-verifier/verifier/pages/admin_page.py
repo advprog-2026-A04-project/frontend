@@ -141,3 +141,110 @@ class AdminPage(BasePage):
             )
         )
         self.pause_checkpoint("admin_order_visible")
+
+    def order_status_text(self, order_id: int) -> str:
+        return self.wait.until(
+            EC.visibility_of_element_located(
+                (
+                    By.XPATH,
+                    f"//article[contains(@class,'order-card')][.//h2[normalize-space()='{order_id}']]"
+                    "//span[contains(@class,'status-pill')]",
+                )
+            )
+        ).text
+
+    def wait_for_order_status(self, order_id: int, expected: str) -> str:
+        self.wait.until(lambda _driver: expected in self.order_status_text(order_id))
+        self.pause_checkpoint("admin_order_status")
+        return self.order_status_text(order_id)
+
+    def click_transition(self, order_id: int, next_status_label: str) -> None:
+        self.click_xpath(
+            f"//article[contains(@class,'order-card')][.//h2[normalize-space()='{order_id}']]"
+            f"//button[normalize-space()='Mark {next_status_label}']"
+        )
+
+    def logout_via_ui(self) -> None:
+        self.click_xpath("//article[.//p[normalize-space()='Admin Console']]//button[normalize-space()='Logout']")
+
+    def wait_for_user(self, email: str) -> None:
+        self.wait.until(
+            EC.visibility_of_element_located(
+                (By.XPATH, f"//article[contains(@class,'service-panel')][.//p[contains(normalize-space(), '{email}')]]")
+            )
+        )
+        self.pause_checkpoint("admin_user_visible")
+
+    def user_status_text(self, email: str) -> str:
+        return self.wait.until(
+            EC.visibility_of_element_located(
+                (
+                    By.XPATH,
+                    f"//article[contains(@class,'service-panel')][.//p[contains(normalize-space(), '{email}')]]"
+                    "//span[contains(@class,'status-pill')]",
+                )
+            )
+        ).text
+
+    def click_user_action(self, email: str, label: str) -> None:
+        self.click_xpath(
+            f"//article[contains(@class,'service-panel')][.//p[contains(normalize-space(), '{email}')]]"
+            f"//button[normalize-space()='{label}']"
+        )
+
+    def user_has_banned_notice(self, email: str) -> bool:
+        elements = self.driver.find_elements(
+            By.XPATH,
+            f"//article[contains(@class,'service-panel')][.//p[contains(normalize-space(), '{email}')]]"
+            "//*[contains(normalize-space(), 'User is banned.')]",
+        )
+        return bool(elements)
+
+    def wait_for_user_status(self, email: str, expected: str) -> str:
+        self.wait.until(lambda _driver: expected in self.user_status_text(email))
+        self.pause_checkpoint("admin_user_status")
+        return self.user_status_text(email)
+
+    def wait_for_user_banned(self, email: str) -> None:
+        self.wait.until(lambda _driver: self.user_has_banned_notice(email))
+        self.pause_checkpoint("admin_user_banned")
+
+    def wait_for_user_unbanned(self, email: str) -> None:
+        self.wait.until(lambda _driver: not self.user_has_banned_notice(email))
+        self.pause_checkpoint("admin_user_unbanned")
+
+    def wait_for_topup_request(self, request_id: int, status: str | None = None) -> None:
+        self._wait_for_wallet_request("Top-up", request_id, status)
+
+    def wait_for_withdrawal_request(self, request_id: int, status: str | None = None) -> None:
+        self._wait_for_wallet_request("Withdrawal", request_id, status)
+
+    def mark_topup_success(self, request_id: int) -> None:
+        self._click_wallet_request_action("Top-up", request_id, "Mark success")
+
+    def mark_topup_failed(self, request_id: int) -> None:
+        self._click_wallet_request_action("Top-up", request_id, "Mark failed")
+
+    def mark_withdrawal_success(self, request_id: int) -> None:
+        self._click_wallet_request_action("Withdrawal", request_id, "Mark success")
+
+    def mark_withdrawal_failed(self, request_id: int) -> None:
+        self._click_wallet_request_action("Withdrawal", request_id, "Mark failed")
+
+    def _wait_for_wallet_request(self, kind: str, request_id: int, status: str | None) -> None:
+        xpath = f"//article[contains(@class,'service-panel')][.//strong[normalize-space()='{kind} #{request_id}']]"
+        self.wait.until(EC.visibility_of_element_located((By.XPATH, xpath)))
+        if status is not None:
+            self.wait.until(
+                EC.text_to_be_present_in_element(
+                    (By.XPATH, f"{xpath}//span[contains(@class,'status-pill')]"),
+                    status,
+                )
+            )
+        self.pause_checkpoint("admin_wallet_request_visible")
+
+    def _click_wallet_request_action(self, kind: str, request_id: int, label: str) -> None:
+        self.click_xpath(
+            f"//article[contains(@class,'service-panel')][.//strong[normalize-space()='{kind} #{request_id}']]"
+            f"//button[normalize-space()='{label}']"
+        )
