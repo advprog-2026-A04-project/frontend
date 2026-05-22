@@ -149,6 +149,202 @@ def transactions_for_order(transactions: list[dict], order_id: int, txn_type: st
     return matched
 
 
+FINAL_NAVIGATION_CASES = [
+    "home_service_health_cards",
+    "home_featured_products",
+    "home_view_all_catalog_link",
+    "products_alias_catalog",
+    "browse_alias_catalog",
+    "catalog_no_match_empty_state",
+    "catalog_category_filter",
+    "not_found_page",
+    "wallet_guard_redirects_guest",
+    "orders_guard_redirects_guest",
+    "checkout_guard_redirects_guest",
+    "buyer_wallet_page_loads",
+    "buyer_orders_page_loads",
+    "buyer_profile_logout_clears_session",
+    "buyer_rejected_from_staff_routes",
+]
+
+
+@pytest.mark.live
+@pytest.mark.smoke
+@pytest.mark.parametrize("case_name", FINAL_NAVIGATION_CASES)
+def test_final_navigation_and_validation_scenarios(
+    case_name,
+    pages,
+    setup_helper,
+    artifact_manager,
+    scenario_artifacts,
+):
+    scenario = f"final_{case_name}"
+    details = {}
+
+    try:
+        if case_name == "home_service_health_cards":
+            pages.home.load()
+            count = pages.home.service_health_count()
+            scenario_artifacts.save_screenshot("home_health_cards.png", pages.driver)
+            details["service_health_cards"] = count
+            assert count >= 5
+
+        elif case_name == "home_featured_products":
+            pages.home.load()
+            count = pages.home.featured_card_count()
+            scenario_artifacts.save_screenshot("home_featured_products.png", pages.driver)
+            details["featured_card_count"] = count
+            assert count > 0
+
+        elif case_name == "home_view_all_catalog_link":
+            pages.home.load()
+            pages.home.open_featured_catalog()
+            pages.catalog.wait_for_text("Browse the newest limited drops.")
+            scenario_artifacts.save_screenshot("home_view_all_catalog.png", pages.driver)
+            details["path"] = pages.home.current_path()
+            assert pages.home.current_path() == "/browse"
+
+        elif case_name == "products_alias_catalog":
+            pages.catalog.load()
+            count = pages.catalog.card_count()
+            scenario_artifacts.save_screenshot("products_alias_catalog.png", pages.driver)
+            details["path"] = pages.catalog.current_path()
+            details["card_count"] = count
+            assert pages.catalog.current_path() == "/products"
+            assert count > 0
+
+        elif case_name == "browse_alias_catalog":
+            pages.catalog.load_browse()
+            count = pages.catalog.card_count()
+            scenario_artifacts.save_screenshot("browse_alias_catalog.png", pages.driver)
+            details["path"] = pages.catalog.current_path()
+            details["card_count"] = count
+            assert pages.catalog.current_path() == "/browse"
+            assert count > 0
+
+        elif case_name == "catalog_no_match_empty_state":
+            pages.catalog.load()
+            pages.catalog.search("zzzz-final-audit-no-match")
+            pages.catalog.wait_for_text("No products matched this search.")
+            scenario_artifacts.save_screenshot("catalog_no_match_empty_state.png", pages.driver)
+            details["query"] = "zzzz-final-audit-no-match"
+
+        elif case_name == "catalog_category_filter":
+            pages.catalog.load()
+            labels = pages.catalog.category_labels()
+            details["category_labels"] = labels
+            assert "All" in labels
+            if len(labels) > 1:
+                selected = labels[1]
+                badges = pages.catalog.wait_for_category_badges(selected)
+                details["selected_category"] = selected
+                details["visible_badges"] = badges
+                assert badges
+            else:
+                details["selected_category"] = "All only"
+                assert pages.catalog.card_count() > 0
+            scenario_artifacts.save_screenshot("catalog_category_filter.png", pages.driver)
+
+        elif case_name == "not_found_page":
+            pages.home.open("/definitely-not-a-real-json-page")
+            pages.home.wait_for_text("That page does not exist.")
+            scenario_artifacts.save_screenshot("not_found_page.png", pages.driver)
+            details["path"] = pages.home.current_path()
+
+        elif case_name == "wallet_guard_redirects_guest":
+            pages.home.open("/wallet")
+            pages.login.wait_for_text("Log in")
+            scenario_artifacts.save_screenshot("wallet_guard_redirects_guest.png", pages.driver)
+            details["path"] = pages.home.current_path()
+            assert pages.home.current_path() == "/login"
+
+        elif case_name == "orders_guard_redirects_guest":
+            pages.home.open("/orders")
+            pages.login.wait_for_text("Log in")
+            scenario_artifacts.save_screenshot("orders_guard_redirects_guest.png", pages.driver)
+            details["path"] = pages.home.current_path()
+            assert pages.home.current_path() == "/login"
+
+        elif case_name == "checkout_guard_redirects_guest":
+            pages.home.open("/checkout?productId=1&qty=1")
+            pages.login.wait_for_text("Log in")
+            scenario_artifacts.save_screenshot("checkout_guard_redirects_guest.png", pages.driver)
+            details["path"] = pages.home.current_path()
+            assert pages.home.current_path() == "/login"
+
+        elif case_name == "buyer_wallet_page_loads":
+            buyer = setup_helper.register_user_api(
+                setup_helper.new_user("wallet-nav"),
+                evidence=scenario_artifacts,
+                evidence_name="wallet_nav_register",
+            )
+            ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "wallet_nav")
+            pages.wallet.load()
+            balance = pages.wallet.balance_text()
+            scenario_artifacts.save_screenshot("buyer_wallet_page_loads.png", pages.driver)
+            details["balance_text"] = balance
+            assert balance
+
+        elif case_name == "buyer_orders_page_loads":
+            buyer = setup_helper.register_user_api(
+                setup_helper.new_user("orders-nav"),
+                evidence=scenario_artifacts,
+                evidence_name="orders_nav_register",
+            )
+            ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "orders_nav")
+            pages.orders.load()
+            scenario_artifacts.save_screenshot("buyer_orders_page_loads.png", pages.driver)
+            details["path"] = pages.orders.current_path()
+            assert pages.orders.current_path() == "/orders"
+
+        elif case_name == "buyer_profile_logout_clears_session":
+            buyer = setup_helper.register_user_api(
+                setup_helper.new_user("profile-logout"),
+                evidence=scenario_artifacts,
+                evidence_name="profile_logout_register",
+            )
+            ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "profile_logout")
+            pages.profile.load()
+            assert pages.profile.has_card("Logout")
+            pages.profile.logout_via_ui()
+            pages.home.wait_for_text("Create Account")
+            scenario_artifacts.save_screenshot("buyer_profile_logout_clears_session.png", pages.driver)
+            details.update(session_snapshot(pages))
+            assert details["token_present"] is False
+            assert details["user_present"] is False
+
+        elif case_name == "buyer_rejected_from_staff_routes":
+            buyer = setup_helper.register_user_api(
+                setup_helper.new_user("staff-guard"),
+                evidence=scenario_artifacts,
+                evidence_name="staff_guard_register",
+            )
+            ui_login(pages, buyer.email, buyer.password, scenario_artifacts, "staff_guard")
+            pages.home.open("/jastiper/catalog")
+            pages.home.wait_for_text("Secure hype drops through the newer JSON storefront.")
+            jastiper_path = pages.home.current_path()
+            pages.home.open("/admin")
+            pages.home.wait_for_text("Secure hype drops through the newer JSON storefront.")
+            admin_path = pages.home.current_path()
+            scenario_artifacts.save_screenshot("buyer_rejected_from_staff_routes.png", pages.driver)
+            details["jastiper_redirect_path"] = jastiper_path
+            details["admin_redirect_path"] = admin_path
+            assert jastiper_path == "/"
+            assert admin_path == "/"
+
+        else:
+            raise AssertionError(f"Unknown final Selenium case: {case_name}")
+
+        scenario_artifacts.write_json("details.json", details)
+        artifact_manager.record_scenario(scenario, VERIFIED, details)
+    except Exception as error:  # noqa: BLE001
+        scenario_artifacts.save_screenshot("failure.png", pages.driver)
+        details["error"] = str(error)
+        scenario_artifacts.write_json("failure.json", details)
+        artifact_manager.record_scenario(scenario, FAILED, details)
+        raise
+
+
 @pytest.mark.live
 @pytest.mark.smoke
 def test_health_and_environment_sanity(settings, artifact_manager, scenario_artifacts):

@@ -23,6 +23,14 @@ try {
     if ($Headed) {
         $env:HEADLESS = "false"
     }
+    if ($env:SELENIUM_DEMO_SLOW -match '^(1|true|yes|on)$') {
+        if (-not $env:SLOW_MO_MS) {
+            $env:SLOW_MO_MS = "800"
+        }
+        if (-not $env:HEADLESS) {
+            $env:HEADLESS = "false"
+        }
+    }
 
     $pytestArgs = @("tests/test_live_verification.py", "-m", "live", "-s")
     if ($DemoOnly) {

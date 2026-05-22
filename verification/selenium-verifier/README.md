@@ -14,8 +14,23 @@ The verifier uses:
 
 ## Covered Flows
 
-Current live suite scenarios:
+Current live suite scenarios (`32` collected browser scenarios: `15` focused final smoke cases plus `17` end-to-end flow cases):
 
+- `final_home_service_health_cards`
+- `final_home_featured_products`
+- `final_home_view_all_catalog_link`
+- `final_products_alias_catalog`
+- `final_browse_alias_catalog`
+- `final_catalog_no_match_empty_state`
+- `final_catalog_category_filter`
+- `final_not_found_page`
+- `final_wallet_guard_redirects_guest`
+- `final_orders_guard_redirects_guest`
+- `final_checkout_guard_redirects_guest`
+- `final_buyer_wallet_page_loads`
+- `final_buyer_orders_page_loads`
+- `final_buyer_profile_logout_clears_session`
+- `final_buyer_rejected_from_staff_routes`
 - `health_and_environment_sanity`
 - `login_catalog_with_configured_buyer`
 - `invalid_login_and_logout_clears_session`
@@ -114,6 +129,7 @@ PAUSE_ON_ENTER=false
 PAUSE_AFTER_SCENARIO=false
 PAUSE_ON_FAILURE=false
 SLOW_MO_MS=0
+SELENIUM_DEMO_SLOW=false
 DEFAULT_TOPUP_AMOUNT=1000000
 DEFAULT_PRODUCT_ID=
 DEFAULT_VOUCHER_CODE=MILESTONE10

@@ -73,6 +73,8 @@ class Settings:
 
 
 def load_settings() -> Settings:
+    demo_slow = _env_bool("SELENIUM_DEMO_SLOW", False)
+    slow_mo_default = 800 if demo_slow else 0
     return Settings(
         frontend_base_url=_env(
             "FRONTEND_BASE_URL",
@@ -107,11 +109,11 @@ def load_settings() -> Settings:
         voucher_admin_token=_env("VOUCHER_ADMIN_TOKEN"),
         internal_api_token=_env("INTERNAL_API_TOKEN"),
         browser=_env("BROWSER", "edge"),
-        headless=_env_bool("HEADLESS", False),
+        headless=_env_bool("HEADLESS", not demo_slow),
         pause_on_enter=_env_bool("PAUSE_ON_ENTER", False),
         pause_after_scenario=_env_bool("PAUSE_AFTER_SCENARIO", False),
         pause_on_failure=_env_bool("PAUSE_ON_FAILURE", False),
-        slow_mo_ms=_env_int("SLOW_MO_MS", 0),
+        slow_mo_ms=_env_int("SLOW_MO_MS", slow_mo_default),
         default_topup_amount=_env_int("DEFAULT_TOPUP_AMOUNT", 1_000_000),
         default_product_id=_env("DEFAULT_PRODUCT_ID"),
         default_voucher_code=_env("DEFAULT_VOUCHER_CODE", "MILESTONE10"),
